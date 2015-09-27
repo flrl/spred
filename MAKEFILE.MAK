@@ -9,11 +9,13 @@ OBJS = 			\
 	mouse.obj	\
 	sprite.obj	\
 	ui.obj 		\
+	vga13h.obj	\
 	main.obj
 
 HEADERS = 		\
 	mouse.h		\
 	sprite.h	\
+	vga13h.h	\
 	ui.h
 
 LIBS =
@@ -26,4 +28,5 @@ $(TARGET): $(OBJS) $(HEADERS)
 
 clean:
 	- del $(TARGET)
+	- del *.map
 	- del *.obj
