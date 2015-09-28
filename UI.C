@@ -145,6 +145,66 @@ void show_preview(Sprite *sprite, struct ui_state *state) {
 	}
 }
 
+void do_keyevent(Sheet *sheet, struct ui_state *state, int key) {
+	switch (key) {
+	case 27:						/* esc */
+		state->finished = 1;
+		break;
+	case 12:						/* ctrl-l */
+		state->redraw |= REDRAW_ALL;
+		break;
+	case 'p':						/* p */
+		state->sel.color ++;
+		if (state->sel.color >= sheet->palette.size)
+			state->sel.color = 0;
+		state->redraw |= REDRAW_PALETTE;
+		break;
+	case 'P':						/* P */
+		if (state->sel.color <= 0)
+			state->sel.color = sheet->palette.size;
+		state->sel.color --;
+		state->redraw |= REDRAW_PALETTE;
+		break;
+	case 't':
+		state->trans0 = !state->trans0;
+		state->redraw |= REDRAW_ZOOM | REDRAW_PREVIEW;
+		break;
+	case 'T':
+		state->transpink = !state->transpink;
+		state->redraw |= REDRAW_ZOOM | REDRAW_PREVIEW;
+		break;
+	case 'z':
+		memset(sheet->sprites[0].pixels, 0,
+			sheet->sprites[0].width * sheet->sprites[0].height);
+		state->redraw |= REDRAW_ZOOM | REDRAW_PREVIEW;
+		break;
+	case 'e':
+		state->sel.px ++;
+		if (state->sel.px >=
+			sheet->sprites[0].width * sheet->sprites[0].height)
+				state->sel.px = 0;
+		state->sel.px_p = &sheet->sprites[0].pixels[state->sel.px];
+		state->redraw |= REDRAW_ZOOM;
+		break;
+	case 'E':
+		state->sel.px --;
+		if (state->sel.px < -1) {
+			state->sel.px = -1;
+			state->sel.px_p = NULL;
+		}
+		else
+			state->sel.px_p =
+				&sheet->sprites[0].pixels[state->sel.px];
+		state->redraw |= REDRAW_ZOOM;
+		break;
+	case ' ':
+		if (NULL != state->sel.px_p)
+			*state->sel.px_p = state->sel.color;
+		state->redraw |= REDRAW_ZOOM | REDRAW_PREVIEW;
+		break;
+	}
+}
+
 void ui_13(Sheet *sheet) {
 	struct ui_state state;
 
@@ -207,65 +267,8 @@ void ui_13(Sheet *sheet) {
 		if (mouse.events)
 			state.redraw |= REDRAW_CURSOR;
 
-		if (kbhit()) {
-			switch (getch()) {
-				case 27:						/* esc */
-					state.finished = 1;
-					break;
-				case 12:						/* ctrl-l */
-					state.redraw |= REDRAW_ALL;
-					break;
-				case 'p':						/* p */
-					state.sel.color ++;
-					if (state.sel.color >= sheet->palette.size)
-						state.sel.color = 0;
-					state.redraw |= REDRAW_PALETTE;
-					break;
-				case 'P':						/* P */
-					if (state.sel.color <= 0)
-						state.sel.color = sheet->palette.size;
-					state.sel.color --;
-					state.redraw |= REDRAW_PALETTE;
-					break;
-				case 't':
-					state.trans0 = !state.trans0;
-					state.redraw |= REDRAW_ZOOM | REDRAW_PREVIEW;
-					break;
-				case 'T':
-					state.transpink = !state.transpink;
-					state.redraw |= REDRAW_ZOOM | REDRAW_PREVIEW;
-					break;
-				case 'z':
-					memset(sheet->sprites[0].pixels, 0,
-						sheet->sprites[0].width * sheet->sprites[0].height);
-					state.redraw |= REDRAW_ZOOM | REDRAW_PREVIEW;
-					break;
-				case 'e':
-					state.sel.px ++;
-					if (state.sel.px >=
-						sheet->sprites[0].width * sheet->sprites[0].height)
-						state.sel.px = 0;
-					state.sel.px_p = &sheet->sprites[0].pixels[state.sel.px];
-					state.redraw |= REDRAW_ZOOM;
-					break;
-				case 'E':
-					state.sel.px --;
-					if (state.sel.px < -1) {
-						state.sel.px = -1;
-						state.sel.px_p = NULL;
-					}
-					else
-						state.sel.px_p =
-							&sheet->sprites[0].pixels[state.sel.px];
-					state.redraw |= REDRAW_ZOOM;
-					break;
-				case ' ':
-					if (NULL != state.sel.px_p)
-						*state.sel.px_p = state.sel.color;
-					state.redraw |= REDRAW_ZOOM | REDRAW_PREVIEW;
-					break;
-			}
-		}
+		if (kbhit())
+			do_keyevent(sheet, &state, getch());
 	}
 
 	memset(vga, 0, 64000);
