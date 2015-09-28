@@ -6,40 +6,38 @@
 
 #include <sys/stat.h>
 
-/* for header */
+#include "sprite.h"
 
-typedef struct color {
-	unsigned char red;
-	unsigned char green;
-	unsigned char blue;
-	unsigned char __unused;
-} Color;
+const Color defpal_2[] = {
+	{ 0,  0,  0  },
+	{ 63, 63, 63 },
+};
 
-typedef struct palette {
-	unsigned short size;
-	Color *colors;
-} Palette;
+const Color defpal_4[] = {
+	{ 0,  0,  0  },
+	{ 21, 21, 21 },
+	{ 42, 42, 42 },
+	{ 63, 63, 63 },
+};
 
-typedef struct sprite {
-	unsigned short width;
-	unsigned short height;
-	unsigned char *pixels;
-} Sprite;
-
-typedef struct sheet {
-	unsigned short width;
-	unsigned short height;
-	Palette palette;
-	Sprite *sprites;
-} Sheet;
-
-int sheet_write(const char *filename, const Sheet *sheet);
-int sheet_read(const char *filename, Sheet *sheet);
-int sheet_init(Sheet *sheet,
-				unsigned short sh_width, unsigned short sh_height,
-				unsigned short sp_width, unsigned short sp_height,
-				unsigned short colors);
-/**************/
+const Color defpal_16[] = {
+	{ 0,  0,  0  },
+	{ 0,  0,  42 },
+	{ 0,  42, 0  },
+	{ 0,  42, 42 },
+	{ 42, 0,  0  },
+	{ 42, 0,  42 },
+	{ 42, 21, 0  },
+	{ 42, 42, 42 },
+	{ 21, 21, 21 },
+	{ 21, 21, 63 },
+	{ 21, 63, 21 },
+	{ 21, 63, 63 },
+	{ 63, 21, 21 },
+	{ 63, 21, 63 },
+	{ 63, 63, 21 },
+	{ 63, 63, 63 },
+};
 
 int sheet_write(const char *filename, const Sheet *sheet) {
 	int fd;
@@ -108,12 +106,19 @@ int sheet_init(Sheet *sheet,
 				unsigned short sh_width, unsigned short sh_height,
 				unsigned short sp_width, unsigned short sp_height,
 				unsigned short colors) {
-
 	unsigned i;
 
+	if (colors < 2) colors = 2;
+	if (colors > 128) colors = 128;
+
 	sheet->palette.size = colors;
-	/* FIXME generate default palette here */
 	sheet->palette.colors = calloc(colors, sizeof(sheet->palette.colors[0]));
+	if (colors >= 16)
+		memcpy(sheet->palette.colors, defpal_16, sizeof(defpal_16));
+	else if (colors >= 4)
+		memcpy(sheet->palette.colors, defpal_4, sizeof(defpal_4));
+	else
+		memcpy(sheet->palette.colors, defpal_2, sizeof(defpal_2));
 
 	sheet->width = sh_width;
 	sheet->height = sh_height;

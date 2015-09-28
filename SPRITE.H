@@ -5,7 +5,6 @@ typedef struct color {
 	unsigned char red;
 	unsigned char green;
 	unsigned char blue;
-	unsigned char __unused;
 } Color;
 
 typedef struct palette {
@@ -25,6 +24,10 @@ typedef struct sheet {
 	Palette palette;
 	Sprite *sprites;
 } Sheet;
+
+extern const Color defpal_2[];
+extern const Color defpal_4[];
+extern const Color defpal_16[];
 
 int sheet_write(const char *filename, const Sheet *sheet);
 int sheet_read(const char *filename, Sheet *sheet);

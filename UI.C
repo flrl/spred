@@ -55,7 +55,8 @@ struct ui_state {
 void show_palette(Palette *pal, struct ui_state *state) {
 	Rect swatch, *window;
 	int rows, cols;
-	int x, y, z;
+	int color;
+	int x, y;
 
 	if (pal->size > 32) {
 		rows = 16; cols = 8;
@@ -79,18 +80,17 @@ void show_palette(Palette *pal, struct ui_state *state) {
 
 	for (y = 0; y < rows; y++) {
 		for (x = 0; x < cols; x++) {
-			/* TODO compensate for drawing pal being offset from ui pal */
-			z = y * cols + x;
-			if (z >= pal->size) return;
+			color = y * cols + x;
+			if (color >= pal->size) return;
 
 			swatch.x = window->x + (x * swatch.w);
 			swatch.y = window->y + (y * swatch.h);
 
 			/* draw the color swatch */
-			fill_rect(&vga, &swatch, z);
+			fill_rect(&vga, &swatch, color + 16);
 
 			/* draw a border around the selected color */
-			if (z == state->sel.color)
+			if (color == state->sel.color)
 				draw_rect(&vga, &swatch, 15);
 		}
 	}
@@ -122,7 +122,7 @@ static void show_zoom(Sprite *sprite, struct ui_state *state) {
 			color = sprite->pixels[z];
 
 			if (color || !state->trans0)
-				fill_rect(&vga, &pixel, color);
+				fill_rect(&vga, &pixel, color + 16);
 			else if (state->transpink)
 				fill_rect(&vga, &pixel, 13);
 
@@ -154,7 +154,7 @@ void show_preview(Sprite *sprite, struct ui_state *state) {
 			color = sprite->pixels[z];
 
 			if (color || !state->trans0)
-				*VGA_PX(offset.x + x, offset.y + y) = color;
+				*VGA_PX(offset.x + x, offset.y + y) = color + 16;
 		}
 	}
 }
@@ -230,6 +230,8 @@ void ui_13(Sheet *sheet) {
 	state.sel.color = 0;
 	state.sel.px = -1;
 	state.sel.px_p = NULL;
+
+	vga13h_setpalette(16, sheet->palette.colors, sheet->palette.size);
 
 	if (!mouse_init(&mouse)) return;
 

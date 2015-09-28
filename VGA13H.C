@@ -17,6 +17,9 @@
 #define SCREEN_WIDTH	320
 #define SCREEN_HEIGHT	200
 
+#define PALETTE_INDEX	0x03c8
+#define PALETTE_DATA	0x03c9
+
 Buffer vga_real = {
 	SCREEN_WIDTH, SCREEN_HEIGHT,
 	SCREEN_WIDTH * SCREEN_HEIGHT,
@@ -89,6 +92,27 @@ void vsync(void) {
 	while (!(inp(INPUT_STATUS) & VRETRACE));
 
 	memcpy(vga_real.pixels, vga.pixels, vga_real.n_pixels);
+}
+
+void vga13h_setpalette(uint16_t start, const Color *colors, size_t count) {
+	unsigned i;
+
+	if (start == 0 && count == 256) {
+		outp(PALETTE_INDEX, 0);
+		for (i = start; i < count; i++) {
+			outp(PALETTE_DATA, colors[i].red);
+			outp(PALETTE_DATA, colors[i].green);
+			outp(PALETTE_DATA, colors[i].blue);
+		}
+	}
+	else {
+		for (i = 0; i < count; i++) {
+			outp(PALETTE_INDEX, start + i);
+			outp(PALETTE_DATA, colors[i].red);
+			outp(PALETTE_DATA, colors[i].green);
+			outp(PALETTE_DATA, colors[i].blue);
+		}
+	}
 }
 
 void draw_rect(Buffer *buf, Rect *rect, uint8_t color) {

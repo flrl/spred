@@ -6,6 +6,7 @@
 #include <stdlib.h>
 
 #include "stdint.h"
+#include "sprite.h"
 
 typedef struct buffer {
 	uint16_t width;
@@ -53,5 +54,7 @@ void draw_rect(Buffer *buf, Rect *rect, uint8_t color);
 void fill_rect(Buffer *buf, Rect *rect, uint8_t color);
 
 void vsync(void);
+
+void vga13h_setpalette(uint16_t start, const Color *colors, size_t count);
 
 #endif
