@@ -10,7 +10,31 @@
 
 Mouse mouse;
 
-void show_palette(int x, int y, Palette *pal, uint8_t sel) {
+enum {
+	REDRAW_CURSOR  = 0x01,
+	REDRAW_ZOOM    = 0x02,
+	REDRAW_PREVIEW = 0x04,
+	REDRAW_PALETTE = 0x08,
+	REDRAW_TOOLBOX = 0x10,
+	REDRAW_SHEET   = 0x20,
+	REDRAW_STATUS  = 0x40,
+	REDRAW_ALL     = 0xffff
+};
+
+struct ui_state {
+	uint16_t redraw;
+	int8_t finished;
+	int8_t trans0;
+	int8_t transpink;
+	uint8_t mouse_under;
+	struct {
+		uint8_t color;
+		int px;
+		uint8_t *px_p;
+	} sel;
+};
+
+void show_palette(Palette *pal, struct ui_state *state) {
 	int r, c;
 	int w, h;
 	int j, i;
@@ -40,16 +64,16 @@ void show_palette(int x, int y, Palette *pal, uint8_t sel) {
 			if (z >= pal->size) return;
 
 			fill_rect(
-				x + (i * w),
-				y + (j * h),
+				256 + (i * w),
+				0 + (j * h),
 				w, h,
 				z);
 
 			/* draw a border around the selected color */
-			if (z == sel) {
+			if (z == state->sel.color) {
 				draw_rect(
-					x + (i * w),
-					y + (j * h),
+					256 + (i * w),
+					0 + (j * h),
 					w, h,
 					15);
 			}
@@ -57,7 +81,7 @@ void show_palette(int x, int y, Palette *pal, uint8_t sel) {
 	}
 }
 
-static void show_zoom(Sprite *sprite, int trans0, int sel_px) {
+static void show_zoom(Sprite *sprite, struct ui_state *state) {
 	int ox, oy;
 	int scale;
 	int sz;
@@ -83,82 +107,73 @@ static void show_zoom(Sprite *sprite, int trans0, int sel_px) {
 			px = j * sprite->width + i;
 			c = sprite->pixels[px];
 
-			if (c || !trans0) {
+			if (c || !state->trans0) {
 				fill_rect(x,y,scale,scale,c);
 			}
-			else {
-				for (k = 0; k < scale; k++) {
-					*PX(vga, x + k, y + k) = 8;
-					*PX(vga, x + k, y + scale-k-1) = 8;
-				}
+			else if (state->transpink) {
+				fill_rect(x,y,scale,scale,13);
 			}
 
-			if (px == sel_px)
+			if (px == state->sel.px)
 				draw_rect(x,y,scale,scale,15);
 		}
 	}
 }
 
-enum {
-	REDRAW_CURSOR  = 0x01,
-	REDRAW_ZOOM    = 0x02,
-	REDRAW_PREVIEW = 0x04,
-	REDRAW_PALETTE = 0x08,
-	REDRAW_TOOLBOX = 0x10,
-	REDRAW_SHEET   = 0x20,
-	REDRAW_STATUS  = 0x40,
-	REDRAW_ALL     = 0xffff
-};
 
 void ui_13(Sheet *sheet) {
-	int finished = 0;
-	uint16_t redraw = REDRAW_ALL;
-	uint8_t mouse_under = 0;
-	uint8_t palette_selection = 0;
-	int trans0 = 1;
-	int sel_px = -1;
+	struct ui_state state;
+
+	state.redraw = REDRAW_ALL;
+	state.finished = 0;
+	state.trans0 = 1;
+	state.transpink = 0;
+	state.mouse_under = 0;
+	state.sel.color = 0;
+	state.sel.px = -1;
+	state.sel.px_p = NULL;
 
 	vga = malloc(64000);
 	if (NULL == vga) return;
 
 	if (!mouse_init(&mouse)) return;
 
-	while (!finished) {
-		if (redraw) {
-			if (REDRAW_ALL == redraw)
+	while (!state.finished) {
+		if (state.redraw) {
+			if (REDRAW_ALL == state.redraw)
 				memset(vga, 8, 64000);
 
-			if (redraw & REDRAW_STATUS)
+			if (state.redraw & REDRAW_STATUS)
 				fill_rect(0,192,320,8,8);
 
-			if (redraw & REDRAW_TOOLBOX)
+			if (state.redraw & REDRAW_TOOLBOX)
 				fill_rect(288,0,32,64,8);
 
-			if (redraw & REDRAW_ZOOM)
-				show_zoom(&sheet->sprites[0], trans0, sel_px);
+			if (state.redraw & REDRAW_ZOOM)
+				show_zoom(&sheet->sprites[0], &state);
 
-			if (redraw & REDRAW_PREVIEW)
+			if (state.redraw & REDRAW_PREVIEW)
 				fill_rect(192,0,64,64,0);
 
-			if (redraw & REDRAW_PALETTE) {
+			if (state.redraw & REDRAW_PALETTE) {
 				fill_rect(256,0,32,64,8);
-				show_palette(256, 0, &sheet->palette, palette_selection);
+				show_palette(&sheet->palette, &state);
 			}
 
-			if (redraw & REDRAW_SHEET)
+			if (state.redraw & REDRAW_SHEET)
 				fill_rect(192,64,128,128,5);
 
-			if (redraw & REDRAW_CURSOR) {
-				*PX(vga, mouse.x, mouse.y) = mouse_under;
+			if (state.redraw & REDRAW_CURSOR) {
+				*PX(vga, mouse.x, mouse.y) = state.mouse_under;
 				mouse_update(&mouse);
-				mouse_under = *PX(vga, mouse.x, mouse.y);
+				state.mouse_under = *PX(vga, mouse.x, mouse.y);
 				*PX(vga, mouse.x, mouse.y) = 15;
 			}
 
 			vsync();
 			memcpy(VGA, vga, 64000);
 
-			redraw = 0;
+			state.redraw = 0;
 		}
 
 		/* wait for some input */
@@ -166,53 +181,60 @@ void ui_13(Sheet *sheet) {
 			;
 
 		if (mouse.events)
-			redraw |= REDRAW_CURSOR;
+			state.redraw |= REDRAW_CURSOR;
 
 		if (kbhit()) {
 			switch (getch()) {
 				case 27:						/* esc */
-					finished = 1;
+					state.finished = 1;
 					break;
 				case 12:						/* ctrl-l */
-					redraw |= REDRAW_ALL;
+					state.redraw |= REDRAW_ALL;
 					break;
 				case 'p':						/* p */
-					palette_selection ++;
-					if (palette_selection >= sheet->palette.size)
-						palette_selection = 0;
-					redraw |= REDRAW_PALETTE;
+					state.sel.color ++;
+					if (state.sel.color >= sheet->palette.size)
+						state.sel.color = 0;
+					state.redraw |= REDRAW_PALETTE;
 					break;
 				case 'P':						/* P */
-					if (palette_selection == 0)
-						palette_selection = sheet->palette.size;
-					palette_selection --;
-					redraw |= REDRAW_PALETTE;
+					if (state.sel.color <= 0)
+						state.sel.color = sheet->palette.size;
+					state.sel.color --;
+					state.redraw |= REDRAW_PALETTE;
 					break;
 				case 't':
-					trans0 = !trans0;
-					redraw |= REDRAW_ZOOM;
+					state.trans0 = !state.trans0;
+					state.redraw |= REDRAW_ZOOM | REDRAW_PREVIEW;
 					break;
 				case 'z':
 					memset(sheet->sprites[0].pixels, 0,
 						sheet->sprites[0].width * sheet->sprites[0].height);
-					redraw |= REDRAW_ZOOM | REDRAW_PREVIEW;
+					state.redraw |= REDRAW_ZOOM | REDRAW_PREVIEW;
 					break;
 				case 'e':
-					sel_px ++;
-					if (sel_px >=
+					state.sel.px ++;
+					if (state.sel.px >=
 						sheet->sprites[0].width * sheet->sprites[0].height)
-						sel_px = 0;
-					redraw |= REDRAW_ZOOM;
+						state.sel.px = 0;
+					state.sel.px_p = &sheet->sprites[0].pixels[state.sel.px];
+					state.redraw |= REDRAW_ZOOM;
 					break;
 				case 'E':
-					sel_px--;
-					if (sel_px < -1) sel_px = -1;
-					redraw |= REDRAW_ZOOM;
+					state.sel.px --;
+					if (state.sel.px < -1) {
+						state.sel.px = -1;
+						state.sel.px_p = NULL;
+					}
+					else
+						state.sel.px_p =
+							&sheet->sprites[0].pixels[state.sel.px];
+					state.redraw |= REDRAW_ZOOM;
 					break;
 				case ' ':
-					if (sel_px >= 0)
-						sheet->sprites[0].pixels[sel_px] = palette_selection;
-					redraw |= REDRAW_ZOOM | REDRAW_PREVIEW;
+					if (NULL != state.sel.px_p)
+						*state.sel.px_p = state.sel.color;
+					state.redraw |= REDRAW_ZOOM | REDRAW_PREVIEW;
 					break;
 			}
 		}
