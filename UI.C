@@ -120,6 +120,30 @@ static void show_zoom(Sprite *sprite, struct ui_state *state) {
 	}
 }
 
+void show_preview(Sprite *sprite, struct ui_state *state) {
+	int ox, oy;
+	int i, j;
+	int z, c;
+
+	/* background */
+	if (state->trans0 && state->transpink)
+		fill_rect(192,0,64,64,13);
+	else
+		fill_rect(192,0,64,64,0);
+
+	ox = 192 + (64 - sprite->width) / 2;
+	oy = 0 + (64 - sprite->height) / 2;
+
+	for (j = 0; j < sprite->height; j++) {
+		for (i = 0; i < sprite->width; i++) {
+			z = j * sprite->width + i;
+			c = sprite->pixels[z];
+
+			if (c || !state->trans0)
+				*PX(vga, ox + i, oy + j) = c;
+		}
+	}
+}
 
 void ui_13(Sheet *sheet) {
 	struct ui_state state;
@@ -153,7 +177,7 @@ void ui_13(Sheet *sheet) {
 				show_zoom(&sheet->sprites[0], &state);
 
 			if (state.redraw & REDRAW_PREVIEW)
-				fill_rect(192,0,64,64,0);
+				show_preview(&sheet->sprites[0], &state);
 
 			if (state.redraw & REDRAW_PALETTE) {
 				fill_rect(256,0,32,64,8);
