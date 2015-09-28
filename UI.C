@@ -231,6 +231,10 @@ void ui_13(Sheet *sheet) {
 					state.trans0 = !state.trans0;
 					state.redraw |= REDRAW_ZOOM | REDRAW_PREVIEW;
 					break;
+				case 'T':
+					state.transpink = !state.transpink;
+					state.redraw |= REDRAW_ZOOM | REDRAW_PREVIEW;
+					break;
 				case 'z':
 					memset(sheet->sprites[0].pixels, 0,
 						sheet->sprites[0].width * sheet->sprites[0].height);
