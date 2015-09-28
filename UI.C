@@ -54,41 +54,37 @@ struct ui_state {
 
 void show_palette(Palette *pal, struct ui_state *state) {
 	Rect swatch, *window;
-	int r, c;
-	int w, h;
-	int j, i;
-	int z;
+	int rows, cols;
+	int x, y, z;
 
 	if (pal->size > 32) {
-		r = 16; c = 8;
-		w = 4; h = 4;
+		rows = 16; cols = 8;
+		rect_set(&swatch, 0, 0, 4, 4);
 	}
 	else if (pal->size > 8) {
-		r = 8; c = 4;
-		w = 8; h = 8;
+		rows = 8; cols = 4;
+		rect_set(&swatch, 0, 0, 8, 8);
 	}
 	else if (pal->size > 2) {
-		r = 4; c = 2;
-		w = 16; h = 16;
+		rows = 4; cols = 2;
+		rect_set(&swatch, 0, 0, 16, 16);
 	}
 	else if (pal->size == 2) {
-		r = 2; c = 1;
-		w = 32; h = 32;
+		rows = 2; cols = 1;
+		rect_set(&swatch, 0, 0, 32, 32);
 	}
 
 	window = &ui_rects[RECT_PALETTE];
-
 	fill_rect(&vga, window, 8);
 
-	for (j = 0; j < r; j++) {
-		for (i = 0; i < c; i++) {
+	for (y = 0; y < rows; y++) {
+		for (x = 0; x < cols; x++) {
 			/* TODO compensate for drawing pal being offset from ui pal */
-			z = j * c + i;
+			z = y * cols + x;
 			if (z >= pal->size) return;
 
-			rect_set(&swatch,
-				window->x + (i * w), window->y + (j * h),
-				w, h);
+			swatch.x = window->x + (x * swatch.w);
+			swatch.y = window->y + (y * swatch.h);
 
 			/* draw the color swatch */
 			fill_rect(&vga, &swatch, z);
@@ -103,39 +99,34 @@ void show_palette(Palette *pal, struct ui_state *state) {
 static void show_zoom(Sprite *sprite, struct ui_state *state) {
 	Rect pixel, *window;
 	Point offset;
-	int scale;
-	int sz;
-	int i, j;
-	int c;
-	int px;
+	int dim, scale, color;
+	int x, y, z;
 
 	/* make it black */
 	window = &ui_rects[RECT_ZOOM];
 	fill_rect(&vga, window, 0);
 
 	/* FIXME can probably optimise this some... */
-	sz = (sprite->width > sprite->height) ? sprite->width : sprite->height;
-	scale = 192 / sz;
-	offset.x = (192 - sprite->width * scale) / 2;
-	offset.y = (192 - sprite->height * scale) / 2;
+	dim = max(sprite->width, sprite->height);
+	scale = window->w / dim;
+	offset.x = (window->w - sprite->width * scale) / 2;
+	offset.y = (window->w - sprite->height * scale) / 2;
 
 	rect_set(&pixel, 0, 0, scale, scale);
-	for (j = 0; j < sprite->height; j++) {
-		pixel.y = offset.y + j * scale;
+	for (y = 0; y < sprite->height; y++) {
+		pixel.y = offset.y + y * scale;
 
-		for (i = 0; i < sprite->width; i++) {
-			pixel.x = offset.x + i * scale;
-			px = j * sprite->width + i;
-			c = sprite->pixels[px];
+		for (x = 0; x < sprite->width; x++) {
+			pixel.x = offset.x + x * scale;
+			z = y * sprite->width + x;
+			color = sprite->pixels[z];
 
-			if (c || !state->trans0) {
-				fill_rect(&vga, &pixel, c);
-			}
-			else if (state->transpink) {
+			if (color || !state->trans0)
+				fill_rect(&vga, &pixel, color);
+			else if (state->transpink)
 				fill_rect(&vga, &pixel, 13);
-			}
 
-			if (px == state->sel.px)
+			if (z == state->sel.px)
 				draw_rect(&vga, &pixel, 15);
 		}
 	}
@@ -144,8 +135,8 @@ static void show_zoom(Sprite *sprite, struct ui_state *state) {
 void show_preview(Sprite *sprite, struct ui_state *state) {
 	Rect *window;
 	Point offset;
-	int i, j;
-	int z, c;
+	int color;
+	int x, y, z;
 
 	/* background */
 	window = &ui_rects[RECT_PREVIEW];
@@ -157,13 +148,13 @@ void show_preview(Sprite *sprite, struct ui_state *state) {
 	offset.x = window->x + (window->w - sprite->width) / 2;
 	offset.y = window->y + (window->h - sprite->height) / 2;
 
-	for (j = 0; j < sprite->height; j++) {
-		for (i = 0; i < sprite->width; i++) {
-			z = j * sprite->width + i;
-			c = sprite->pixels[z];
+	for (y = 0; y < sprite->height; y++) {
+		for (x = 0; x < sprite->width; x++) {
+			z = y * sprite->width + x;
+			color = sprite->pixels[z];
 
-			if (c || !state->trans0)
-				*VGA_PX(offset.x + i, offset.y + j) = c;
+			if (color || !state->trans0)
+				*VGA_PX(offset.x + x, offset.y + y) = color;
 		}
 	}
 }
