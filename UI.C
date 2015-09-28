@@ -21,6 +21,24 @@ enum {
 	REDRAW_ALL     = 0xffff
 };
 
+enum {
+	RECT_ZOOM = 0,
+	RECT_PREVIEW,
+	RECT_PALETTE,
+	RECT_TOOLBOX,
+	RECT_SHEET,
+	RECT_STATUS,
+};
+
+Rect ui_rects[] = {
+	{ 0, 0, 192, 192 },    /* RECT_ZOOM    */
+	{ 192, 0, 64, 64 },    /* RECT_PREVIEW */
+	{ 256, 0, 32, 64 },    /* RECT_PALETTE */
+	{ 288, 0, 32, 64 },    /* RECT_TOOLBOX */
+	{ 192, 64, 128, 128 }, /* RECT_SHEET   */
+	{ 0, 192, 320, 8 },    /* RECT_STATUS  */
+};
+
 struct ui_state {
 	uint16_t redraw;
 	int8_t finished;
@@ -35,6 +53,7 @@ struct ui_state {
 };
 
 void show_palette(Palette *pal, struct ui_state *state) {
+	Rect swatch, *window;
 	int r, c;
 	int w, h;
 	int j, i;
@@ -57,41 +76,42 @@ void show_palette(Palette *pal, struct ui_state *state) {
 		w = 32; h = 32;
 	}
 
+	window = &ui_rects[RECT_PALETTE];
+
+	fill_rect(&vga, window, 8);
+
 	for (j = 0; j < r; j++) {
 		for (i = 0; i < c; i++) {
 			/* TODO compensate for drawing pal being offset from ui pal */
 			z = j * c + i;
 			if (z >= pal->size) return;
 
-			fill_rect(&vga,
-				256 + (i * w),
-				0 + (j * h),
-				w, h,
-				z);
+			rect_set(&swatch,
+				window->x + (i * w), window->y + (j * h),
+				w, h);
+
+			/* draw the color swatch */
+			fill_rect(&vga, &swatch, z);
 
 			/* draw a border around the selected color */
-			if (z == state->sel.color) {
-				draw_rect(&vga,
-					256 + (i * w),
-					0 + (j * h),
-					w, h,
-					15);
-			}
+			if (z == state->sel.color)
+				draw_rect(&vga, &swatch, 15);
 		}
 	}
 }
 
 static void show_zoom(Sprite *sprite, struct ui_state *state) {
+	Rect pixel, *window;
 	int ox, oy;
 	int scale;
 	int sz;
-	int i, j, k;
-	int x, y;
+	int i, j;
 	int c;
 	int px;
 
 	/* make it black */
-	fill_rect(&vga,0,0,192,192,0);
+	window = &ui_rects[RECT_ZOOM];
+	fill_rect(&vga, window, 0);
 
 	/* FIXME can probably optimise this some... */
 	sz = (sprite->width > sprite->height) ? sprite->width : sprite->height;
@@ -99,40 +119,43 @@ static void show_zoom(Sprite *sprite, struct ui_state *state) {
 	ox = (192 - sprite->width * scale) / 2;
 	oy = (192 - sprite->height * scale) / 2;
 
+	rect_set(&pixel, 0, 0, scale, scale);
 	for (j = 0; j < sprite->height; j++) {
-		y = oy + j * scale;
+		pixel.y = oy + j * scale;
 
 		for (i = 0; i < sprite->width; i++) {
-			x = ox + i * scale;
+			pixel.x = ox + i * scale;
 			px = j * sprite->width + i;
 			c = sprite->pixels[px];
 
 			if (c || !state->trans0) {
-				fill_rect(&vga,x,y,scale,scale,c);
+				fill_rect(&vga, &pixel, c);
 			}
 			else if (state->transpink) {
-				fill_rect(&vga,x,y,scale,scale,13);
+				fill_rect(&vga, &pixel, 13);
 			}
 
 			if (px == state->sel.px)
-				draw_rect(&vga,x,y,scale,scale,15);
+				draw_rect(&vga, &pixel, 15);
 		}
 	}
 }
 
 void show_preview(Sprite *sprite, struct ui_state *state) {
+	Rect *window;
 	int ox, oy;
 	int i, j;
 	int z, c;
 
 	/* background */
+	window = &ui_rects[RECT_PREVIEW];
 	if (state->trans0 && state->transpink)
-		fill_rect(&vga,192,0,64,64,13);
+		fill_rect(&vga, window, 13);
 	else
-		fill_rect(&vga,192,0,64,64,0);
+		fill_rect(&vga, window, 0);
 
-	ox = 192 + (64 - sprite->width) / 2;
-	oy = 0 + (64 - sprite->height) / 2;
+	ox = window->x + (window->w - sprite->width) / 2;
+	oy = window->y + (window->h - sprite->height) / 2;
 
 	for (j = 0; j < sprite->height; j++) {
 		for (i = 0; i < sprite->width; i++) {
@@ -221,14 +244,14 @@ void ui_13(Sheet *sheet) {
 
 	while (!state.finished) {
 		if (state.redraw) {
-			if (REDRAW_ALL == state.redraw)
+			if (state.redraw == (uint16_t) REDRAW_ALL)
 				memset(vga.pixels, 8, vga.n_pixels);
 
 			if (state.redraw & REDRAW_STATUS)
-				fill_rect(&vga,0,192,320,8,8);
+				fill_rect(&vga, &ui_rects[RECT_STATUS], 8);
 
 			if (state.redraw & REDRAW_TOOLBOX)
-				fill_rect(&vga,288,0,32,64,8);
+				fill_rect(&vga, &ui_rects[RECT_TOOLBOX], 8);
 
 			if (state.redraw & REDRAW_ZOOM)
 				show_zoom(&sheet->sprites[0], &state);
@@ -237,12 +260,11 @@ void ui_13(Sheet *sheet) {
 				show_preview(&sheet->sprites[0], &state);
 
 			if (state.redraw & REDRAW_PALETTE) {
-				fill_rect(&vga,256,0,32,64,8);
 				show_palette(&sheet->palette, &state);
 			}
 
 			if (state.redraw & REDRAW_SHEET)
-				fill_rect(&vga,192,64,128,128,5);
+				fill_rect(&vga, &ui_rects[RECT_SHEET], 5);
 
 			if (state.redraw & REDRAW_CURSOR) {
 				*VGA_PX(mouse.x, mouse.y) = state.mouse_under;

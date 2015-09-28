@@ -14,6 +14,13 @@ typedef struct buffer {
 	uint8_t  *pixels;
 } Buffer;
 
+typedef struct rect {
+	int16_t x;
+	int16_t y;
+	int16_t w;
+	int16_t h;
+} Rect;
+
 extern Buffer vga_real;
 extern Buffer vga;
 
@@ -23,11 +30,22 @@ extern Buffer vga;
 int vga13h_init(void);
 void vga13h_done(void);
 
-void draw_rect(Buffer *buf, int x, int y, int w, int h, uint8_t color);
-void fill_rect(Buffer *buf, int x, int y, int w, int h, uint8_t color);
-void diag_line(int x, int y, int len, uint8_t color);
-void copy_rect(int dx, int dy, int sx, int sy, int w, int h);
-void set_mode(unsigned char mode);
+#define rect_set(_r,_x,_y,_w,_h)                               \
+do {                                                           \
+	Rect *__r = (_r);                                          \
+	__r->x = (_x); __r->y = (_y);                              \
+	__r->w = (_w); __r->h = (_h);                              \
+} while(0)
+
+#define norm_rect(_r)                                          \
+do {                                                           \
+	Rect *__r = (_r);                                          \
+	if (__r->w < 0) { __r->x -= __r->w; __r->w = -__r->w; }    \
+	if (__r->h < 0) { __r->y -= __r->h; __r->h = -__r->h; }    \
+} while (0)
+
+void draw_rect(Buffer *buf, Rect *rect, uint8_t color);
+void fill_rect(Buffer *buf, Rect *rect, uint8_t color);
 
 void vsync(void);
 

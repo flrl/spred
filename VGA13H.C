@@ -59,17 +59,27 @@ void vga13h_done(void) {
 }
 
 static void rect_test(void) {
+	Rect rect;
+
 	memset(vga_real.pixels, 0, vga_real.n_pixels);
 
-	fill_rect(&vga_real, 0,16,320,16,4);
-	fill_rect(&vga_real, 16,0,16,200,3);
+	rect_set(&rect, 0, 16, 320, 16);
+	fill_rect(&vga_real, &rect, 4);
 
-	fill_rect(&vga_real, 64,0,16,200,6);
-	fill_rect(&vga_real, 0,64,320,16,5);
+	rect_set(&rect, 16, 0, 16, 200);
+	fill_rect(&vga_real, &rect, 3);
 
-	draw_rect(&vga_real, 32,32,32,32,15);
+	rect_set(&rect, 64, 0, 16, 200);
+	fill_rect(&vga_real, &rect, 6);
 
-	fill_rect(&vga_real, 128,128,32,32,2);
+	rect_set(&rect, 0, 64, 320, 16);
+	fill_rect(&vga_real, &rect, 5);
+
+	rect_set(&rect, 32, 32, 32, 32);
+	draw_rect(&vga_real, &rect, 15);
+
+	rect_set(&rect, 128, 128, 32, 32);
+	fill_rect(&vga_real, &rect, 2);
 
 	while(27 != getch());
 }
@@ -81,48 +91,46 @@ void vsync(void) {
 	memcpy(vga_real.pixels, vga.pixels, vga_real.n_pixels);
 }
 
-void draw_rect(Buffer *buf, int x, int y, int w, int h, uint8_t color) {
+void draw_rect(Buffer *buf, Rect *rect, uint8_t color) {
 	int i;
 
-	/* TODO compensate for negative/zero dimensions here */
+	if (!rect->w || !rect->h) return; /* nothing to draw */
+	norm_rect(rect);
 
 	if (buf == &vga) {
 		/* draw top and bottom lines */
-		memset(VGA_PX(x,y), color, w);
-		memset(VGA_PX(x,y+h-1), color, w);
+		memset(VGA_PX(rect->x, rect->y), color, rect->w);
+		memset(VGA_PX(rect->x, rect->y + rect->h - 1), color, rect->w);
 
 		/* draw left and right lines */
-		for (i = y+1; i < y+h-1; i++) {
-			*VGA_PX(x, i) = color;
-			*VGA_PX(x+w-1, i) = color;
+		for (i = rect->y + 1; i < rect->y + rect->h - 1; i++) {
+			*VGA_PX(rect->x, i) = color;
+			*VGA_PX(rect->x + rect->w - 1, i) = color;
 		}
 	}
 	else {
 		/* draw top and bottom lines */
-		memset(BUF_PX(buf,x,y), color, w);
-		memset(BUF_PX(buf,x,y+h-1), color, w);
+		memset(BUF_PX(buf, rect->x, rect->y), color, rect->w);
+		memset(BUF_PX(buf, rect->x, rect->y + rect->h - 1), color, rect->w);
 
 		/* draw left and right lines */
-		for (i = y+1; i < y+h-1; i++) {
-			*BUF_PX(buf,x, i) = color;
-			*BUF_PX(buf,x+w-1, i) = color;
+		for (i = rect->y + 1; i < rect->y + rect->h - 1; i++) {
+			*BUF_PX(buf, rect->x, i) = color;
+			*BUF_PX(buf, rect->x + rect->w - 1, i) = color;
 		}
 	}
 }
 
-void fill_rect(Buffer *buf, int x, int y, int w, int h, uint8_t color) {
+void fill_rect(Buffer *buf, Rect *rect, uint8_t color) {
 	int i;
 
-	/* TODO compensate for negative dimensions here */
+	if (!rect->w || !rect->h) return; /* nothing to draw */
+	norm_rect(rect);
 
-	if (buf == &vga) {
-		for (i = y; i < y + h; i++) {
-			memset(VGA_PX(x, i), color, w);
-		}
-	}
-	else {
-		for (i = y; i < y+h; i++) {
-			memset(BUF_PX(buf,x, i), color, w);
-		}
-	}
+	if (buf == &vga)
+		for (i = rect->y; i < rect->y + rect->h; i++)
+			memset(VGA_PX(rect->x, i), color, rect->w);
+	else
+		for (i = rect->y; i < rect->y + rect->h; i++)
+			memset(BUF_PX(buf, rect->x, i), color, rect->w);
 }
