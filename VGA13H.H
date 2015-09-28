@@ -21,6 +21,11 @@ typedef struct rect {
 	int16_t h;
 } Rect;
 
+typedef struct point {
+	int16_t x;
+	int16_t y;
+} Point;
+
 extern Buffer vga_real;
 extern Buffer vga;
 

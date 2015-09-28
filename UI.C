@@ -102,7 +102,7 @@ void show_palette(Palette *pal, struct ui_state *state) {
 
 static void show_zoom(Sprite *sprite, struct ui_state *state) {
 	Rect pixel, *window;
-	int ox, oy;
+	Point offset;
 	int scale;
 	int sz;
 	int i, j;
@@ -116,15 +116,15 @@ static void show_zoom(Sprite *sprite, struct ui_state *state) {
 	/* FIXME can probably optimise this some... */
 	sz = (sprite->width > sprite->height) ? sprite->width : sprite->height;
 	scale = 192 / sz;
-	ox = (192 - sprite->width * scale) / 2;
-	oy = (192 - sprite->height * scale) / 2;
+	offset.x = (192 - sprite->width * scale) / 2;
+	offset.y = (192 - sprite->height * scale) / 2;
 
 	rect_set(&pixel, 0, 0, scale, scale);
 	for (j = 0; j < sprite->height; j++) {
-		pixel.y = oy + j * scale;
+		pixel.y = offset.y + j * scale;
 
 		for (i = 0; i < sprite->width; i++) {
-			pixel.x = ox + i * scale;
+			pixel.x = offset.x + i * scale;
 			px = j * sprite->width + i;
 			c = sprite->pixels[px];
 
@@ -143,7 +143,7 @@ static void show_zoom(Sprite *sprite, struct ui_state *state) {
 
 void show_preview(Sprite *sprite, struct ui_state *state) {
 	Rect *window;
-	int ox, oy;
+	Point offset;
 	int i, j;
 	int z, c;
 
@@ -154,8 +154,8 @@ void show_preview(Sprite *sprite, struct ui_state *state) {
 	else
 		fill_rect(&vga, window, 0);
 
-	ox = window->x + (window->w - sprite->width) / 2;
-	oy = window->y + (window->h - sprite->height) / 2;
+	offset.x = window->x + (window->w - sprite->width) / 2;
+	offset.y = window->y + (window->h - sprite->height) / 2;
 
 	for (j = 0; j < sprite->height; j++) {
 		for (i = 0; i < sprite->width; i++) {
@@ -163,7 +163,7 @@ void show_preview(Sprite *sprite, struct ui_state *state) {
 			c = sprite->pixels[z];
 
 			if (c || !state->trans0)
-				*VGA_PX(ox + i, oy + j) = c;
+				*VGA_PX(offset.x + i, offset.y + j) = c;
 		}
 	}
 }
