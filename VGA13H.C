@@ -6,13 +6,26 @@
 #include "stdint.h"
 #include "vga13h.h"
 
+#define VIDEO_INT		0x10
+#define SET_MODE		0x00
+#define VGA_256_MODE	0x13
+#define TEXT_MODE   	0x03
+
+#define INPUT_STATUS	0x03da
+#define VRETRACE		0x08
+
+#define SCREEN_WIDTH	320
+#define SCREEN_HEIGHT	200
+
 Buffer vga_real = {
-	320, 200, 64000,
+	SCREEN_WIDTH, SCREEN_HEIGHT,
+	SCREEN_WIDTH * SCREEN_HEIGHT,
 	(uint8_t *) 0xA0000000L
 };
 
 Buffer vga = {
-	320, 200, 64000,
+	SCREEN_WIDTH, SCREEN_HEIGHT,
+	SCREEN_WIDTH * SCREEN_HEIGHT,
 	NULL
 };
 
@@ -24,9 +37,9 @@ int vga13h_init(void) {
 	if (NULL == vga.pixels)
 		return -1;
 
-	regs.h.ah = 0x00;
-	regs.h.al = 0x13;
-	int86(0x10, &regs, &regs);
+	regs.h.ah = SET_MODE;
+	regs.h.al = VGA_256_MODE;
+	int86(VIDEO_INT, &regs, &regs);
 
 	return 0;
 }
@@ -40,9 +53,9 @@ void vga13h_done(void) {
 	free(vga.pixels);
 	vga.pixels = NULL;
 
-	regs.h.ah = 0x00;
-	regs.h.al = 0x03;
-	int86(0x10, &regs, &regs);
+	regs.h.ah = SET_MODE;
+	regs.h.al = TEXT_MODE;
+	int86(VIDEO_INT, &regs, &regs);
 }
 
 static void rect_test(void) {
@@ -62,8 +75,8 @@ static void rect_test(void) {
 }
 
 void vsync(void) {
-	while ((inp(0x03da) & 0x08));
-	while (!(inp(0x03da) & 0x08));
+	while ((inp(INPUT_STATUS) & VRETRACE));
+	while (!(inp(INPUT_STATUS) & VRETRACE));
 
 	memcpy(vga_real.pixels, vga.pixels, vga_real.n_pixels);
 }
@@ -112,5 +125,4 @@ void fill_rect(Buffer *buf, int x, int y, int w, int h, uint8_t color) {
 			memset(BUF_PX(buf,x, i), color, w);
 		}
 	}
-}
-
+}
