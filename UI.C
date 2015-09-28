@@ -63,7 +63,7 @@ void show_palette(Palette *pal, struct ui_state *state) {
 			z = j * c + i;
 			if (z >= pal->size) return;
 
-			fill_rect(
+			fill_rect(&vga,
 				256 + (i * w),
 				0 + (j * h),
 				w, h,
@@ -71,7 +71,7 @@ void show_palette(Palette *pal, struct ui_state *state) {
 
 			/* draw a border around the selected color */
 			if (z == state->sel.color) {
-				draw_rect(
+				draw_rect(&vga,
 					256 + (i * w),
 					0 + (j * h),
 					w, h,
@@ -91,7 +91,7 @@ static void show_zoom(Sprite *sprite, struct ui_state *state) {
 	int px;
 
 	/* make it black */
-	fill_rect(0,0,192,192,0);
+	fill_rect(&vga,0,0,192,192,0);
 
 	/* FIXME can probably optimise this some... */
 	sz = (sprite->width > sprite->height) ? sprite->width : sprite->height;
@@ -108,14 +108,14 @@ static void show_zoom(Sprite *sprite, struct ui_state *state) {
 			c = sprite->pixels[px];
 
 			if (c || !state->trans0) {
-				fill_rect(x,y,scale,scale,c);
+				fill_rect(&vga,x,y,scale,scale,c);
 			}
 			else if (state->transpink) {
-				fill_rect(x,y,scale,scale,13);
+				fill_rect(&vga,x,y,scale,scale,13);
 			}
 
 			if (px == state->sel.px)
-				draw_rect(x,y,scale,scale,15);
+				draw_rect(&vga,x,y,scale,scale,15);
 		}
 	}
 }
@@ -127,9 +127,9 @@ void show_preview(Sprite *sprite, struct ui_state *state) {
 
 	/* background */
 	if (state->trans0 && state->transpink)
-		fill_rect(192,0,64,64,13);
+		fill_rect(&vga,192,0,64,64,13);
 	else
-		fill_rect(192,0,64,64,0);
+		fill_rect(&vga,192,0,64,64,0);
 
 	ox = 192 + (64 - sprite->width) / 2;
 	oy = 0 + (64 - sprite->height) / 2;
@@ -140,7 +140,7 @@ void show_preview(Sprite *sprite, struct ui_state *state) {
 			c = sprite->pixels[z];
 
 			if (c || !state->trans0)
-				*PX(vga, ox + i, oy + j) = c;
+				*VGA_PX(ox + i, oy + j) = c;
 		}
 	}
 }
@@ -217,21 +217,18 @@ void ui_13(Sheet *sheet) {
 	state.sel.px = -1;
 	state.sel.px_p = NULL;
 
-	vga = malloc(64000);
-	if (NULL == vga) return;
-
 	if (!mouse_init(&mouse)) return;
 
 	while (!state.finished) {
 		if (state.redraw) {
 			if (REDRAW_ALL == state.redraw)
-				memset(vga, 8, 64000);
+				memset(vga.pixels, 8, vga.n_pixels);
 
 			if (state.redraw & REDRAW_STATUS)
-				fill_rect(0,192,320,8,8);
+				fill_rect(&vga,0,192,320,8,8);
 
 			if (state.redraw & REDRAW_TOOLBOX)
-				fill_rect(288,0,32,64,8);
+				fill_rect(&vga,288,0,32,64,8);
 
 			if (state.redraw & REDRAW_ZOOM)
 				show_zoom(&sheet->sprites[0], &state);
@@ -240,22 +237,21 @@ void ui_13(Sheet *sheet) {
 				show_preview(&sheet->sprites[0], &state);
 
 			if (state.redraw & REDRAW_PALETTE) {
-				fill_rect(256,0,32,64,8);
+				fill_rect(&vga,256,0,32,64,8);
 				show_palette(&sheet->palette, &state);
 			}
 
 			if (state.redraw & REDRAW_SHEET)
-				fill_rect(192,64,128,128,5);
+				fill_rect(&vga,192,64,128,128,5);
 
 			if (state.redraw & REDRAW_CURSOR) {
-				*PX(vga, mouse.x, mouse.y) = state.mouse_under;
+				*VGA_PX(mouse.x, mouse.y) = state.mouse_under;
 				mouse_update(&mouse);
-				state.mouse_under = *PX(vga, mouse.x, mouse.y);
-				*PX(vga, mouse.x, mouse.y) = 15;
+				state.mouse_under = *VGA_PX(mouse.x, mouse.y);
+				*VGA_PX(mouse.x, mouse.y) = 15;
 			}
 
 			vsync();
-			memcpy(VGA, vga, 64000);
 
 			state.redraw = 0;
 		}
@@ -270,9 +266,4 @@ void ui_13(Sheet *sheet) {
 		if (kbhit())
 			do_keyevent(sheet, &state, getch());
 	}
-
-	memset(vga, 0, 64000);
-	vsync();
-	memcpy(VGA, vga, 64000);
-	vsync();
 }

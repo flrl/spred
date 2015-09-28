@@ -17,13 +17,6 @@ struct options {
 	unsigned pal_colors;
 };
 
-static void restore_text_mode(void) {
-	union REGS regs;
-	regs.h.ah = 0x00;
-	regs.h.al = 0x03;
-	int86(0x10, &regs, &regs);
-}
-
 static int get_options(struct options *options, int argc, char **argv) {
 	int i, c, v;
 
@@ -106,11 +99,11 @@ int main(int argc, char **argv) {
 
 	sleep(1); /* so you get to see the message */
 
-	set_mode(0x13);
+	vga13h_init();
 
 	ui_13(&sheet);
 
-	restore_text_mode();
+	vga13h_done();
 
 	return 0;
 }
