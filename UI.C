@@ -77,7 +77,7 @@ void show_palette(Palette *pal, struct ui_state *state) {
 	}
 
 	window = &ui_rects[RECT_PALETTE];
-	fill_rect(&vga, window, 8);
+	fill_rect(&vga, window, 248);
 
 	for (y = 0; y < rows; y++) {
 		for (x = 0; x < cols; x++) {
@@ -88,11 +88,11 @@ void show_palette(Palette *pal, struct ui_state *state) {
 			swatch.y = window->y + (y * swatch.h);
 
 			/* draw the color swatch */
-			fill_rect(&vga, &swatch, color + 16);
+			fill_rect(&vga, &swatch, color);
 
 			/* draw a border around the selected color */
 			if (state->sel.show && color == state->sel.color)
-				draw_rect(&vga, &swatch, 15);
+				draw_rect(&vga, &swatch, 255);
 		}
 	}
 }
@@ -105,7 +105,7 @@ static void show_zoom(Sprite *sprite, struct ui_state *state) {
 
 	/* make it black */
 	window = &ui_rects[RECT_ZOOM];
-	fill_rect(&vga, window, 0);
+	fill_rect(&vga, window, 240);
 
 	/* FIXME can probably optimise this some... */
 	dim = max(sprite->width, sprite->height);
@@ -123,14 +123,14 @@ static void show_zoom(Sprite *sprite, struct ui_state *state) {
 			color = sprite->pixels[z];
 
 			if (color || !state->trans0)
-				fill_rect(&vga, &pixel, color + 16);
+				fill_rect(&vga, &pixel, color);
 			else if (state->transpink)
-				fill_rect(&vga, &pixel, 13);
+				fill_rect(&vga, &pixel, 253);
 
 			if (state->sel.show
 				&& x == state->sel.pixel.x
 				&& y == state->sel.pixel.y)
-					draw_rect(&vga, &pixel, 15);
+					draw_rect(&vga, &pixel, 255);
 		}
 	}
 }
@@ -142,16 +142,12 @@ void show_preview(Sprite *sprite, struct ui_state *state) {
 	/* background */
 	window = &ui_rects[RECT_PREVIEW];
 	if (state->trans0 && state->transpink)
-		fill_rect(&vga, window, 13);
+		fill_rect(&vga, window, 253);
 	else
-		fill_rect(&vga, window, 0);
+		fill_rect(&vga, window, 240);
 
 	offset.x = window->x + (window->w - sprite->width) / 2;
 	offset.y = window->y + (window->h - sprite->height) / 2;
-
-	/* FIXME blitting sprites means needing their palette to align
-	 * with world, which means putting app palette at top end rather
-	 * than bottom... */
 
 	blit_buf(&vga, &offset, sprite, NULL);
 }
@@ -244,20 +240,24 @@ void ui_13(Sheet *sheet) {
 	state.sel.pixel.y = -1;
 	state.sel.pixel_p = NULL;
 
-	vga13h_setpalette(16, sheet->palette.colors, sheet->palette.size);
+	/* put the UI palette at the top end */
+	vga13h_setpalette(240, defpal_16, sizeof(defpal_16));
+
+	/* and the sheet palette at 0, for easy blitting */
+	vga13h_setpalette(0, sheet->palette.colors, sheet->palette.size);
 
 	if (!mouse_init(&mouse)) return;
 
 	while (!state.finished) {
 		if (state.redraw) {
 			if (state.redraw == (uint16_t) REDRAW_ALL)
-				memset(vga.pixels, 8, vga.n_pixels);
+				memset(vga.pixels, 248, vga.n_pixels);
 
 			if (state.redraw & REDRAW_STATUS)
-				fill_rect(&vga, &ui_rects[RECT_STATUS], 8);
+				fill_rect(&vga, &ui_rects[RECT_STATUS], 248);
 
 			if (state.redraw & REDRAW_TOOLBOX)
-				fill_rect(&vga, &ui_rects[RECT_TOOLBOX], 8);
+				fill_rect(&vga, &ui_rects[RECT_TOOLBOX], 248);
 
 			if (state.redraw & REDRAW_ZOOM)
 				show_zoom(&sheet->sprites[0], &state);
@@ -270,13 +270,13 @@ void ui_13(Sheet *sheet) {
 			}
 
 			if (state.redraw & REDRAW_SHEET)
-				fill_rect(&vga, &ui_rects[RECT_SHEET], 5);
+				fill_rect(&vga, &ui_rects[RECT_SHEET], 245);
 
 			if (state.redraw & REDRAW_CURSOR) {
 				*VGA_PX(mouse.x, mouse.y) = state.mouse_under;
 				mouse_update(&mouse);
 				state.mouse_under = *VGA_PX(mouse.x, mouse.y);
-				*VGA_PX(mouse.x, mouse.y) = 15;
+				*VGA_PX(mouse.x, mouse.y) = 255;
 			}
 
 			vsync();

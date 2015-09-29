@@ -192,6 +192,7 @@ void blit_buf(Buffer *d_buf, Point *d_pt,
 	if (!s_clip.w || !s_clip.h)
 		return; /* nothing to draw */
 
+	/* FIXME need to handle transparent pixels */
 	for (y = 0; y < s_clip.h; y++) {
 		memcpy(BUF_PX(d_buf, d_pt->x, d_pt->y + y),
 			   BUF_PX(s_buf, s_clip.x, s_clip.y + y),

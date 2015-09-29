@@ -31,9 +31,9 @@ typedef struct sheet {
 	Sprite *sprites;
 } Sheet;
 
-extern const Color defpal_2[];
-extern const Color defpal_4[];
-extern const Color defpal_16[];
+extern const Color defpal_2[2];
+extern const Color defpal_4[4];
+extern const Color defpal_16[16];
 
 int sheet_write(const char *filename, const Sheet *sheet);
 int sheet_read(const char *filename, Sheet *sheet);
