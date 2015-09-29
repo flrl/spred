@@ -46,9 +46,10 @@ struct ui_state {
 	int8_t transpink;
 	uint8_t mouse_under;
 	struct {
+		int8_t  show;
 		uint8_t color;
-		int px;
-		uint8_t *px_p;
+		Point   pixel;
+		uint8_t *pixel_p;
 	} sel;
 };
 
@@ -90,7 +91,7 @@ void show_palette(Palette *pal, struct ui_state *state) {
 			fill_rect(&vga, &swatch, color + 16);
 
 			/* draw a border around the selected color */
-			if (color == state->sel.color)
+			if (state->sel.show && color == state->sel.color)
 				draw_rect(&vga, &swatch, 15);
 		}
 	}
@@ -126,8 +127,10 @@ static void show_zoom(Sprite *sprite, struct ui_state *state) {
 			else if (state->transpink)
 				fill_rect(&vga, &pixel, 13);
 
-			if (z == state->sel.px)
-				draw_rect(&vga, &pixel, 15);
+			if (state->sel.show
+				&& x == state->sel.pixel.x
+				&& y == state->sel.pixel.y)
+					draw_rect(&vga, &pixel, 15);
 		}
 	}
 }
@@ -157,6 +160,26 @@ void show_preview(Sprite *sprite, struct ui_state *state) {
 				*VGA_PX(offset.x + x, offset.y + y) = color + 16;
 		}
 	}
+}
+
+static void select_pixel(Sprite *sprite,
+						struct ui_state *state, int x, int y) {
+	int16_t new_x, new_y;
+
+	new_x = state->sel.pixel.x + x;
+	new_y = state->sel.pixel.y + y;
+
+	if (new_x < 0) new_x = 0;
+	if (new_y < 0) new_y = 0;
+
+	if (new_x >= sprite->width) new_x = sprite->width - 1;
+	if (new_y >= sprite->height) new_y = sprite->height - 1;
+
+	state->sel.pixel.x = new_x;
+	state->sel.pixel.y = new_y;
+	state->sel.pixel_p = &sprite->pixels[new_y * sprite->width + new_x];
+
+	state->redraw |= REDRAW_ZOOM;
 }
 
 void do_keyevent(Sheet *sheet, struct ui_state *state, int key) {
@@ -192,29 +215,23 @@ void do_keyevent(Sheet *sheet, struct ui_state *state, int key) {
 			sheet->sprites[0].width * sheet->sprites[0].height);
 		state->redraw |= REDRAW_ZOOM | REDRAW_PREVIEW;
 		break;
-	case 'e':
-		state->sel.px ++;
-		if (state->sel.px >=
-			sheet->sprites[0].width * sheet->sprites[0].height)
-				state->sel.px = 0;
-		state->sel.px_p = &sheet->sprites[0].pixels[state->sel.px];
-		state->redraw |= REDRAW_ZOOM;
+	case 'w':
+		select_pixel(&sheet->sprites[0], state, 0, -1);
 		break;
-	case 'E':
-		state->sel.px --;
-		if (state->sel.px < -1) {
-			state->sel.px = -1;
-			state->sel.px_p = NULL;
-		}
-		else
-			state->sel.px_p =
-				&sheet->sprites[0].pixels[state->sel.px];
-		state->redraw |= REDRAW_ZOOM;
+	case 'a':
+		select_pixel(&sheet->sprites[0], state, -1, 0);
+		break;
+	case 's':
+		select_pixel(&sheet->sprites[0], state, 0, 1);
+		break;
+	case 'd':
+		select_pixel(&sheet->sprites[0], state, 1, 0);
 		break;
 	case ' ':
-		if (NULL != state->sel.px_p)
-			*state->sel.px_p = state->sel.color;
-		state->redraw |= REDRAW_ZOOM | REDRAW_PREVIEW;
+		if (NULL != state->sel.pixel_p) {
+			*state->sel.pixel_p = state->sel.color;
+			state->redraw |= REDRAW_ZOOM | REDRAW_PREVIEW;
+		}
 		break;
 	}
 }
@@ -227,9 +244,11 @@ void ui_13(Sheet *sheet) {
 	state.trans0 = 1;
 	state.transpink = 0;
 	state.mouse_under = 0;
+	state.sel.show = 1;
 	state.sel.color = 0;
-	state.sel.px = -1;
-	state.sel.px_p = NULL;
+	state.sel.pixel.x = -1;
+	state.sel.pixel.y = -1;
+	state.sel.pixel_p = NULL;
 
 	vga13h_setpalette(16, sheet->palette.colors, sheet->palette.size);
 
