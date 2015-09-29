@@ -160,9 +160,14 @@ void fill_rect(Buffer *buf, Rect *rect, uint8_t color) {
 }
 
 void blit_buf(Buffer *d_buf, Point *d_pt,
-			 const Buffer *s_buf, const Rect *s_rect) {
+			 const Buffer *s_buf, const Rect *s_rect,
+			 int trans0) {
 	Rect s_clip;
-	int y;
+	int x, y;
+	int c;
+
+	if (d_pt->x > d_buf->width || d_pt->y > d_buf->height)
+		return; /* nothing to draw */
 
 	if (s_rect)
 		memcpy(&s_clip, s_rect, sizeof(s_clip));
@@ -189,13 +194,21 @@ void blit_buf(Buffer *d_buf, Point *d_pt,
 	if (d_pt->y + s_clip.h > d_buf->height)
 		s_clip.h = d_buf->height - d_pt->y;
 
-	if (!s_clip.w || !s_clip.h)
+	if (s_clip.w <= 0 || s_clip.h <= 0)
 		return; /* nothing to draw */
 
-	/* FIXME need to handle transparent pixels */
 	for (y = 0; y < s_clip.h; y++) {
-		memcpy(BUF_PX(d_buf, d_pt->x, d_pt->y + y),
-			   BUF_PX(s_buf, s_clip.x, s_clip.y + y),
-			   s_clip.w);
+		if (trans0) {
+			for (x = 0; x < s_clip.w; x++) {
+				c = *BUF_PX(s_buf, s_clip.x + x, s_clip.y + y);
+				if (c)
+					*BUF_PX(d_buf, d_pt->x + x, d_pt->y + y) = c;
+			}
+		}
+		else {
+			memcpy(BUF_PX(d_buf, d_pt->x, d_pt->y + y),
+				   BUF_PX(s_buf, s_clip.x, s_clip.y + y),
+				   s_clip.w);
+		}
 	}
 }

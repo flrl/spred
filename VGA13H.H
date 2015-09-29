@@ -46,7 +46,8 @@ do {                                                           \
 void draw_rect(Buffer *buf, Rect *rect, uint8_t color);
 void fill_rect(Buffer *buf, Rect *rect, uint8_t color);
 void blit_buf(Buffer *d_buf, Point *d_pt,
-	const Buffer *s_buf, const Rect *s_rect);
+	const Buffer *s_buf, const Rect *s_rect,
+	int trans0);
 
 void vsync(void);
 

@@ -149,7 +149,7 @@ void show_preview(Sprite *sprite, struct ui_state *state) {
 	offset.x = window->x + (window->w - sprite->width) / 2;
 	offset.y = window->y + (window->h - sprite->height) / 2;
 
-	blit_buf(&vga, &offset, sprite, NULL);
+	blit_buf(&vga, &offset, sprite, NULL, state->trans0);
 }
 
 static void select_pixel(Sprite *sprite,
