@@ -201,8 +201,14 @@ static void select_pixel(Sprite *sprite,
 	state->redraw |= REDRAW_ZOOM;
 }
 
-void do_keyevent(Sheet *sheet, struct ui_state *state, int key) {
+void do_keyevent(Sheet *sheet, struct ui_state *state, unsigned key) {
 	switch (key) {
+	case 0:
+	case 224:
+		/* recurse for special keys, with key value in high byte
+		 * and the escape value that got us here in low byte */
+		do_keyevent(sheet, state, getch() << 8 | key);
+		return;
 	case 27:						/* esc */
 		state->finished = 1;
 		break;
