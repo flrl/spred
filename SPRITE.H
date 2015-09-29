@@ -35,6 +35,6 @@ int sheet_init(Sheet *sheet,
 				unsigned short sh_width, unsigned short sh_height,
 				unsigned short sp_width, unsigned short sp_height,
 				unsigned short colors);
-
+void sheet_free(Sheet *sheet);
 #endif
 

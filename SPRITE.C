@@ -1,6 +1,7 @@
 #include <dos.h>
 #include <fcntl.h>
 #include <io.h>
+#include <mem.h>
 #include <stdio.h>
 #include <stdlib.h>
 
@@ -132,4 +133,21 @@ int sheet_init(Sheet *sheet,
 	}
 
 	return 0;
+}
+
+void sheet_free(Sheet *sheet) {
+	if (sheet->palette.colors)
+		free(sheet->palette.colors);
+
+	if (sheet->sprites) {
+		unsigned i;
+		for (i = 0; i < sheet->width * sheet->height; i++) {
+			Sprite *s = &sheet->sprites[i];
+			if (s->pixels)
+				free(s->pixels);
+		}
+		free(sheet->sprites);
+	}
+
+	memset(sheet, 0, sizeof(*sheet));
 }
