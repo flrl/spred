@@ -8,13 +8,6 @@
 #include "stdint.h"
 #include "sprite.h"
 
-typedef struct buffer {
-	uint16_t width;
-	uint16_t height;
-	uint16_t n_pixels;
-	uint8_t  *pixels;
-} Buffer;
-
 typedef struct rect {
 	int16_t x;
 	int16_t y;
@@ -41,7 +34,7 @@ do {                                                           \
 	Rect *__r = (_r);                                          \
 	__r->x = (_x); __r->y = (_y);                              \
 	__r->w = (_w); __r->h = (_h);                              \
-} while(0)
+} while (0)
 
 #define norm_rect(_r)                                          \
 do {                                                           \
@@ -52,6 +45,8 @@ do {                                                           \
 
 void draw_rect(Buffer *buf, Rect *rect, uint8_t color);
 void fill_rect(Buffer *buf, Rect *rect, uint8_t color);
+void blit_buf(Buffer *d_buf, Point *d_pt,
+	const Buffer *s_buf, const Rect *s_rect);
 
 void vsync(void);
 

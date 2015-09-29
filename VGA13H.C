@@ -157,4 +157,44 @@ void fill_rect(Buffer *buf, Rect *rect, uint8_t color) {
 	else
 		for (i = rect->y; i < rect->y + rect->h; i++)
 			memset(BUF_PX(buf, rect->x, i), color, rect->w);
+}
+
+void blit_buf(Buffer *d_buf, Point *d_pt,
+			 const Buffer *s_buf, const Rect *s_rect) {
+	Rect s_clip;
+	int y;
+
+	if (s_rect)
+		memcpy(&s_clip, s_rect, sizeof(s_clip));
+	else
+		rect_set(&s_clip, 0, 0, s_buf->width, s_buf->height);
+
+	norm_rect(&s_clip);
+
+	if (d_pt->x < 0) {
+		/* it's negative, so the additions are inverted... */
+		s_clip.x -= d_pt->x;
+		s_clip.w += d_pt->x;
+		d_pt->x = 0;
+	}
+	if (d_pt->y < 0) {
+		s_clip.y -= d_pt->y;
+		s_clip.h += d_pt->y;
+		d_pt->y = 0;
+	}
+
+	if (d_pt->x + s_clip.w > d_buf->width)
+		s_clip.w = d_buf->width - d_pt->x;
+
+	if (d_pt->y + s_clip.h > d_buf->height)
+		s_clip.h = d_buf->height - d_pt->y;
+
+	if (!s_clip.w || !s_clip.h)
+		return; /* nothing to draw */
+
+	for (y = 0; y < s_clip.h; y++) {
+		memcpy(BUF_PX(d_buf, d_pt->x, d_pt->y + y),
+			   BUF_PX(s_buf, s_clip.x, s_clip.y + y),
+			   s_clip.w);
+	}
 }

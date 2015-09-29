@@ -95,8 +95,9 @@ int sheet_read(const char *filename, Sheet *sheet) {
 		Sprite *s = &sheet->sprites[i];
 		read(fd, &s->width, sizeof(s->width));
 		read(fd, &s->height, sizeof(s->height));
-		s->pixels = malloc(s->width * s->height * sizeof(s->pixels[0]));
-		read(fd, s->pixels, s->width * s->height * sizeof(s->pixels[0]));
+		s->n_pixels = s->width * s->height;
+		s->pixels = malloc(s->n_pixels * sizeof(s->pixels[0]));
+		read(fd, s->pixels, s->n_pixels * sizeof(s->pixels[0]));
 	}
 
 	close(fd);
@@ -129,7 +130,8 @@ int sheet_init(Sheet *sheet,
 		Sprite *s = &sheet->sprites[i];
 		s->width = sp_width;
 		s->height = sp_height;
-		s->pixels = calloc(sp_width * sp_height, sizeof(s->pixels[0]));
+		s->n_pixels = sp_width * sp_height;
+		s->pixels = calloc(s->n_pixels, sizeof(s->pixels[0]));
 	}
 
 	return 0;

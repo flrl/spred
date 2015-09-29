@@ -138,8 +138,6 @@ static void show_zoom(Sprite *sprite, struct ui_state *state) {
 void show_preview(Sprite *sprite, struct ui_state *state) {
 	Rect *window;
 	Point offset;
-	int color;
-	int x, y, z;
 
 	/* background */
 	window = &ui_rects[RECT_PREVIEW];
@@ -151,15 +149,11 @@ void show_preview(Sprite *sprite, struct ui_state *state) {
 	offset.x = window->x + (window->w - sprite->width) / 2;
 	offset.y = window->y + (window->h - sprite->height) / 2;
 
-	for (y = 0; y < sprite->height; y++) {
-		for (x = 0; x < sprite->width; x++) {
-			z = y * sprite->width + x;
-			color = sprite->pixels[z];
+	/* FIXME blitting sprites means needing their palette to align
+	 * with world, which means putting app palette at top end rather
+	 * than bottom... */
 
-			if (color || !state->trans0)
-				*VGA_PX(offset.x + x, offset.y + y) = color + 16;
-		}
-	}
+	blit_buf(&vga, &offset, sprite, NULL);
 }
 
 static void select_pixel(Sprite *sprite,

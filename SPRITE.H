@@ -1,6 +1,8 @@
 #ifndef SPRITE_H
 #define SPRITE_H
 
+#include "stdint.h"
+
 typedef struct color {
 	unsigned char red;
 	unsigned char green;
@@ -12,11 +14,15 @@ typedef struct palette {
 	Color *colors;
 } Palette;
 
-typedef struct sprite {
-	unsigned short width;
-	unsigned short height;
-	unsigned char *pixels;
-} Sprite;
+typedef struct buffer {
+	uint16_t width;
+	uint16_t height;
+	uint16_t n_pixels;
+	uint8_t *pixels;
+} Buffer;
+
+/* a sprite is just a pixel buffer */
+typedef Buffer Sprite;
 
 typedef struct sheet {
 	unsigned short width;
