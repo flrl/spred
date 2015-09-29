@@ -152,6 +152,35 @@ void show_preview(Sprite *sprite, struct ui_state *state) {
 	blit_buf(&vga, &offset, sprite, NULL, state->trans0);
 }
 
+void show_sheet(Sheet *sheet, struct ui_state *state) {
+	Rect *window;
+	Point offset;
+	Sprite *sprite;
+	int x, y, z;
+
+	window = &ui_rects[RECT_SHEET];
+	if (state->trans0 && state->transpink)
+		fill_rect(&vga, window, 253);
+	else
+		fill_rect(&vga, window, 240);
+
+	/* FIXME compensate for small sheets */
+
+	for (y = 0; y < sheet->height; y++) {
+		for (x = 0; x < sheet->width; x++) {
+			z = y * sheet->width + x;
+			sprite = &sheet->sprites[z];
+
+			offset.x = window->x + x * sprite->width;
+			offset.y = window->y + y * sprite->height;
+
+			blit_buf(&vga, &offset, sprite, NULL, state->trans0);
+
+			/* FIXME show selection blip around selected sprite */
+		}
+	}
+}
+
 static void select_pixel(Sprite *sprite,
 						struct ui_state *state, int x, int y) {
 	int16_t new_x, new_y;
@@ -194,16 +223,16 @@ void do_keyevent(Sheet *sheet, struct ui_state *state, int key) {
 		break;
 	case 't':
 		state->trans0 = !state->trans0;
-		state->redraw |= REDRAW_ZOOM | REDRAW_PREVIEW;
+		state->redraw |= REDRAW_ZOOM | REDRAW_PREVIEW | REDRAW_SHEET;
 		break;
 	case 'T':
 		state->transpink = !state->transpink;
-		state->redraw |= REDRAW_ZOOM | REDRAW_PREVIEW;
+		state->redraw |= REDRAW_ZOOM | REDRAW_PREVIEW | REDRAW_SHEET;
 		break;
 	case 'z':
 		memset(sheet->sprites[0].pixels, 0,
 			sheet->sprites[0].width * sheet->sprites[0].height);
-		state->redraw |= REDRAW_ZOOM | REDRAW_PREVIEW;
+		state->redraw |= REDRAW_ZOOM | REDRAW_PREVIEW | REDRAW_SHEET;
 		break;
 	case 'w':
 		select_pixel(&sheet->sprites[0], state, 0, -1);
@@ -220,7 +249,7 @@ void do_keyevent(Sheet *sheet, struct ui_state *state, int key) {
 	case ' ':
 		if (NULL != state->sel.pixel_p) {
 			*state->sel.pixel_p = state->sel.color;
-			state->redraw |= REDRAW_ZOOM | REDRAW_PREVIEW;
+			state->redraw |= REDRAW_ZOOM | REDRAW_PREVIEW | REDRAW_SHEET;
 		}
 		break;
 	}
@@ -265,12 +294,11 @@ void ui_13(Sheet *sheet) {
 			if (state.redraw & REDRAW_PREVIEW)
 				show_preview(&sheet->sprites[0], &state);
 
-			if (state.redraw & REDRAW_PALETTE) {
+			if (state.redraw & REDRAW_PALETTE)
 				show_palette(&sheet->palette, &state);
-			}
 
 			if (state.redraw & REDRAW_SHEET)
-				fill_rect(&vga, &ui_rects[RECT_SHEET], 245);
+				show_sheet(sheet, &state);
 
 			if (state.redraw & REDRAW_CURSOR) {
 				*VGA_PX(mouse.x, mouse.y) = state.mouse_under;
