@@ -178,8 +178,7 @@ void blit_buf(Buffer *d_buf, const Point *d_pt,
 	if (s_rect) {
 		memcpy(&s_clip, s_rect, sizeof(s_clip));
 		rect_norm(&s_clip);
-		rect_set(&bound, 0, 0, s_buf->w, s_buf->h);
-		rect_clip(&s_clip, &bound);
+		rect_clip(&s_clip, (const Rect *) s_buf);
 	}
 	else {
 		rect_set(&s_clip, 0, 0, s_buf->w, s_buf->h);
@@ -190,8 +189,7 @@ void blit_buf(Buffer *d_buf, const Point *d_pt,
 
 	/* clip dest rect to dest buf: can't render to pixels that don't exist */
 	rect_set(&d_clip, d_pt->x, d_pt->y, s_clip.w, s_clip.h);
-	rect_set(&bound, 0, 0, d_buf->w, d_buf->h);
-	rect_clip(&d_clip, &bound);
+	rect_clip(&d_clip, (const Rect *) d_buf);
 
 	if (d_clip.w <= 0 || d_clip.h <= 0)
 		return; /* nowhere to draw */
