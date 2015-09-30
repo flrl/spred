@@ -47,7 +47,7 @@ struct ui_state {
 	uint8_t mouse_under;
 	struct {
 		int8_t  show;
-		uint8_t color;
+		int8_t  color;
 		Point   pixel;
 		uint8_t *pixel_p;
 	} sel;
@@ -183,20 +183,13 @@ void show_sheet(Sheet *sheet, struct ui_state *state) {
 
 static void select_pixel(Sprite *sprite,
 						struct ui_state *state, int x, int y) {
-	int16_t new_x, new_y;
 
-	new_x = state->sel.pixel.x + x;
-	new_y = state->sel.pixel.y + y;
 
-	if (new_x < 0) new_x = 0;
-	if (new_y < 0) new_y = 0;
+	badd(&state->sel.pixel.x, x, 0, sprite->width - 1);
+	badd(&state->sel.pixel.y, y, 0, sprite->height - 1);
 
-	if (new_x >= sprite->width) new_x = sprite->width - 1;
-	if (new_y >= sprite->height) new_y = sprite->height - 1;
-
-	state->sel.pixel.x = new_x;
-	state->sel.pixel.y = new_y;
-	state->sel.pixel_p = &sprite->pixels[new_y * sprite->width + new_x];
+	state->sel.pixel_p = BUF_PX(sprite,
+							 state->sel.pixel.x, state->sel.pixel.y);
 
 	state->redraw |= REDRAW_ZOOM;
 }
@@ -216,15 +209,11 @@ void do_keyevent(Sheet *sheet, struct ui_state *state, unsigned key) {
 		state->redraw |= REDRAW_ALL;
 		break;
 	case 'p':						/* p */
-		state->sel.color ++;
-		if (state->sel.color >= sheet->palette.size)
-			state->sel.color = 0;
+		wadd(&state->sel.color, 1, 0, sheet->palette.size - 1);
 		state->redraw |= REDRAW_PALETTE;
 		break;
 	case 'P':						/* P */
-		if (state->sel.color <= 0)
-			state->sel.color = sheet->palette.size;
-		state->sel.color --;
+		wadd(&state->sel.color, -1, 0, sheet->palette.size - 1);
 		state->redraw |= REDRAW_PALETTE;
 		break;
 	case 't':

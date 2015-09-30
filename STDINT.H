@@ -12,6 +12,9 @@ typedef unsigned long  uint32_t;
 typedef int32_t  intptr_t;
 typedef uint32_t uintptr_t;
 
+typedef int32_t  intmax_t;
+typedef uint32_t uintmax_t;
+
 #define INT8_MAX	(127)
 #define INT16_MAX	(32768)
 #define INT32_MAX	(2147483647L)
