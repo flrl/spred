@@ -91,7 +91,10 @@ void show_palette(Palette *pal, struct ui_state *state) {
 			swatch.y = window->y + (y * swatch.h);
 
 			/* draw the color swatch */
-			fill_rect(&vga, &swatch, color);
+			if (color == 0 && state->trans0 && state->transpink)
+				fill_rect(&vga, &swatch, 253);
+			else
+				fill_rect(&vga, &swatch, color);
 
 			/* draw a border around the selected color */
 			if (state->sel.show && color == state->sel.color)
@@ -221,11 +224,13 @@ void do_keyevent(Sheet *sheet, struct ui_state *state, unsigned key) {
 		break;
 	case 't':
 		state->trans0 = !state->trans0;
-		state->redraw |= REDRAW_ZOOM | REDRAW_PREVIEW | REDRAW_SHEET;
+		state->redraw |= REDRAW_ZOOM | REDRAW_PREVIEW
+						| REDRAW_SHEET | REDRAW_PALETTE;
 		break;
 	case 'T':
 		state->transpink = !state->transpink;
-		state->redraw |= REDRAW_ZOOM | REDRAW_PREVIEW | REDRAW_SHEET;
+		state->redraw |= REDRAW_ZOOM | REDRAW_PREVIEW
+						| REDRAW_SHEET | REDRAW_PALETTE;
 		break;
 	case 'z':
 		memset(sheet->sprites[0].pixels, 0,
