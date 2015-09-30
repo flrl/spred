@@ -53,6 +53,7 @@ struct ui_state {
 		Point   pixel;
 		uint8_t *pixel_p;
 	} sel;
+	const char *fname;
 };
 
 void show_palette(Palette *pal, struct ui_state *state) {
@@ -249,10 +250,14 @@ void do_keyevent(Sheet *sheet, struct ui_state *state, unsigned key) {
 			state->redraw |= REDRAW_ZOOM | REDRAW_PREVIEW | REDRAW_SHEET;
 		}
 		break;
+	case '!':
+		if (state->fname)
+			sheet_write(state->fname, sheet);
+		break;
 	}
 }
 
-void ui_13(Sheet *sheet) {
+void ui_13(Sheet *sheet, const char *fname) {
 	struct ui_state state;
 
 	state.redraw = REDRAW_ALL;
@@ -265,6 +270,7 @@ void ui_13(Sheet *sheet) {
 	state.sel.pixel.x = -1;
 	state.sel.pixel.y = -1;
 	state.sel.pixel_p = NULL;
+	state.fname = fname;
 
 	/* put the UI palette at the top end */
 	vga13h_setpalette(240, defpal_16, sizeof(defpal_16));

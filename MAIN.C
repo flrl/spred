@@ -101,7 +101,7 @@ int main(int argc, char **argv) {
 
 	vga13h_init();
 
-	ui_13(&sheet);
+	ui_13(&sheet, fname);
 
 	vga13h_done();
 
