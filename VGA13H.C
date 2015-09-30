@@ -119,7 +119,7 @@ void draw_rect(Buffer *buf, Rect *rect, uint8_t color) {
 	int i;
 
 	if (!rect->w || !rect->h) return; /* nothing to draw */
-	norm_rect(rect);
+	rect_norm(rect);
 
 	if (buf == &vga) {
 		/* draw top and bottom lines */
@@ -149,7 +149,7 @@ void fill_rect(Buffer *buf, Rect *rect, uint8_t color) {
 	int i;
 
 	if (!rect->w || !rect->h) return; /* nothing to draw */
-	norm_rect(rect);
+	rect_norm(rect);
 
 	if (buf == &vga)
 		for (i = rect->y; i < rect->y + rect->h; i++)
@@ -174,7 +174,7 @@ void blit_buf(Buffer *d_buf, Point *d_pt,
 	else
 		rect_set(&s_clip, 0, 0, s_buf->width, s_buf->height);
 
-	norm_rect(&s_clip);
+	rect_norm(&s_clip);
 
 	if (d_pt->x < 0) {
 		/* it's negative, so the additions are inverted... */

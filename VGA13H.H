@@ -36,7 +36,7 @@ do {                                                           \
 	__r->w = (_w); __r->h = (_h);                              \
 } while (0)
 
-#define norm_rect(_r)                                          \
+#define rect_norm(_r)                                          \
 do {                                                           \
 	Rect *__r = (_r);                                          \
 	if (__r->w < 0) { __r->x -= __r->w; __r->w = -__r->w; }    \
