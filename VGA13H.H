@@ -33,21 +33,6 @@ do {                                                           \
 
 void rect_clip(Rect *rect, const Rect *bound);
 
-#define badd(_d,_i,_lb,_ub)                                    \
-do {                                                           \
-	*(_d) = min(max(*(_d) + (_i), (_lb)), (_ub));              \
-} while (0)
-
-#define wadd(_d,_i,_lb,_ub)                                    \
-do {                                                           \
-	intmax_t __tmp = *(_d) + (_i);                             \
-	*(_d) = ((__tmp > (_ub))                                   \
-			? (_lb)                                            \
-			: ((__tmp < (_lb))                                 \
-				? (_ub)                                        \
-				: __tmp));                                     \
-} while (0)
-
 void draw_rect(Buffer *buf, Rect *rect, uint8_t color);
 void fill_rect(Buffer *buf, Rect *rect, uint8_t color);
 void blit_buf(Buffer *d_buf, const Point *d_pt,

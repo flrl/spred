@@ -17,6 +17,7 @@ HEADERS = 		\
 	sprite.h	\
 	types.h		\
 	vga13h.h	\
+	util.h		\
 	ui.h
 
 LIBS =

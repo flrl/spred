@@ -7,6 +7,7 @@
 #include "stdint.h"
 #include "types.h"
 #include "ui.h"
+#include "util.h"
 #include "vga13h.h"
 
 Mouse mouse;
