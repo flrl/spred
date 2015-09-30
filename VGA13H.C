@@ -3,6 +3,7 @@
 #include <mem.h>
 #include <stdlib.h>
 
+#include "geom.h"
 #include "stdint.h"
 #include "vga13h.h"
 
@@ -159,24 +160,6 @@ void fill_rect(Buffer *buf, Rect *rect, uint8_t color) {
 	else
 		for (i = rect->y; i < rect->y + rect->h; i++)
 			memset(BUF_PX(buf, rect->x, i), color, rect->w);
-}
-
-void rect_clip(Rect *rect, const Rect *bound) {
-	/* assumes normalised input rectangles ok */
-	rect->w = min(rect->w, bound->w - rect->x);
-	rect->h = min(rect->h, bound->h - rect->y);
-
-	if (rect->x < bound->x) {
-		rect->w -= bound->x - rect->x;
-		rect->x = bound->x;
-	}
-	if (rect->y < bound->y) {
-		rect->h -= bound->y - rect->y;
-		rect->y = bound->y;
-	}
-
-	if (rect->w < 0) rect->w = 0;
-	if (rect->h < 0) rect->h = 0;
 }
 
 void blit_buf(Buffer *d_buf, const Point *d_pt,

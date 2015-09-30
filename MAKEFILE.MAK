@@ -6,6 +6,7 @@ Cx = $(TC)\lib\c$(MEM)
 TARGET = spred.exe
 
 OBJS = 			\
+	geom.obj	\
 	mouse.obj	\
 	sprite.obj	\
 	ui.obj 		\
@@ -13,6 +14,7 @@ OBJS = 			\
 	main.obj
 
 HEADERS = 		\
+	geom.h		\
 	mouse.h		\
 	sprite.h	\
 	types.h		\
