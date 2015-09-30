@@ -15,6 +15,7 @@ OBJS = 			\
 HEADERS = 		\
 	mouse.h		\
 	sprite.h	\
+	types.h		\
 	vga13h.h	\
 	ui.h
 

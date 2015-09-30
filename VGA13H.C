@@ -21,12 +21,14 @@
 #define PALETTE_DATA	0x03c9
 
 Buffer vga_real = {
+	0, 0,
 	SCREEN_WIDTH, SCREEN_HEIGHT,
 	SCREEN_WIDTH * SCREEN_HEIGHT,
 	(uint8_t *) 0xA0000000L
 };
 
 Buffer vga = {
+	0, 0,
 	SCREEN_WIDTH, SCREEN_HEIGHT,
 	SCREEN_WIDTH * SCREEN_HEIGHT,
 	NULL
@@ -186,18 +188,18 @@ void blit_buf(Buffer *d_buf, const Point *d_pt,
 	int x, y;
 	int c;
 
-	if (d_pt->x >= d_buf->width || d_pt->y >= d_buf->height)
+	if (d_pt->x >= d_buf->w || d_pt->y >= d_buf->h)
 		return; /* nowhere to draw */
 
 	/* clip source rect to source buf: can't render pixels i don't have */
 	if (s_rect) {
 		memcpy(&s_clip, s_rect, sizeof(s_clip));
 		rect_norm(&s_clip);
-		rect_set(&bound, 0, 0, s_buf->width, s_buf->height);
+		rect_set(&bound, 0, 0, s_buf->w, s_buf->h);
 		rect_clip(&s_clip, &bound);
 	}
 	else {
-		rect_set(&s_clip, 0, 0, s_buf->width, s_buf->height);
+		rect_set(&s_clip, 0, 0, s_buf->w, s_buf->h);
 	}
 
 	if (s_clip.w <= 0 || s_clip.h <= 0)
@@ -205,7 +207,7 @@ void blit_buf(Buffer *d_buf, const Point *d_pt,
 
 	/* clip dest rect to dest buf: can't render to pixels that don't exist */
 	rect_set(&d_clip, d_pt->x, d_pt->y, s_clip.w, s_clip.h);
-	rect_set(&bound, 0, 0, d_buf->width, d_buf->height);
+	rect_set(&bound, 0, 0, d_buf->w, d_buf->h);
 	rect_clip(&d_clip, &bound);
 
 	if (d_clip.w <= 0 || d_clip.h <= 0)
@@ -221,8 +223,8 @@ void blit_buf(Buffer *d_buf, const Point *d_pt,
 	for (y = 0; y < s_clip.h; y++) {
 		if (trans0) {
 			int d_yoff, s_yoff;
-			s_yoff = (s_clip.y + y) * s_buf->width;
-			d_yoff = (d_clip.y + y) * d_buf->width;
+			s_yoff = (s_clip.y + y) * s_buf->w;
+			d_yoff = (d_clip.y + y) * d_buf->w;
 			for (x = 0; x < s_clip.w; x++) {
 				c = s_buf->pixels[s_yoff + s_clip.x + x];
 				if (c)

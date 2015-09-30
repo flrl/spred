@@ -8,23 +8,11 @@
 #include "stdint.h"
 #include "sprite.h"
 
-typedef struct rect {
-	int16_t x;
-	int16_t y;
-	int16_t w;
-	int16_t h;
-} Rect;
-
-typedef struct point {
-	int16_t x;
-	int16_t y;
-} Point;
-
 extern Buffer vga_real;
 extern Buffer vga;
 
 #define VGA_PX(x,y) &vga.pixels[((y) << 8) + ((y) << 6) + x]
-#define BUF_PX(buf,x,y) &buf->pixels[(y) * buf->width + (x)]
+#define BUF_PX(buf,x,y) &buf->pixels[(y) * buf->w + (x)]
 
 int vga13h_init(void);
 void vga13h_done(void);

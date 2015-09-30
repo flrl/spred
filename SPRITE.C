@@ -61,9 +61,9 @@ int sheet_write(const char *filename, const Sheet *sheet) {
 	/* write sprites */
 	for (i=0; i < sheet->width * sheet->height; i++) {
 		Sprite *s = &sheet->sprites[i];
-		write(fd, &s->width, sizeof(s->width));
-		write(fd, &s->height, sizeof(s->height));
-		write(fd, s->pixels, sizeof(s->pixels[0]) * s->width * s->height);
+		write(fd, &s->w, sizeof(s->w));
+		write(fd, &s->h, sizeof(s->h));
+		write(fd, s->pixels, sizeof(s->pixels[0]) * s->w * s->h);
 	}
 
 	close(fd);
@@ -93,9 +93,10 @@ int sheet_read(const char *filename, Sheet *sheet) {
 		malloc(sheet->width * sheet->height * sizeof(sheet->sprites[0]));
 	for (i=0; i < sheet->width * sheet->height; i++) {
 		Sprite *s = &sheet->sprites[i];
-		read(fd, &s->width, sizeof(s->width));
-		read(fd, &s->height, sizeof(s->height));
-		s->n_pixels = s->width * s->height;
+		s->x = s->y = 0;
+		read(fd, &s->w, sizeof(s->w));
+		read(fd, &s->h, sizeof(s->h));
+		s->n_pixels = s->w * s->h;
 		s->pixels = malloc(s->n_pixels * sizeof(s->pixels[0]));
 		read(fd, s->pixels, s->n_pixels * sizeof(s->pixels[0]));
 	}
@@ -128,8 +129,9 @@ int sheet_init(Sheet *sheet,
 
 	for (i=0; i < sh_width * sh_height; i++) {
 		Sprite *s = &sheet->sprites[i];
-		s->width = sp_width;
-		s->height = sp_height;
+		s->x = s->y = 0;
+		s->w = sp_width;
+		s->h = sp_height;
 		s->n_pixels = sp_width * sp_height;
 		s->pixels = calloc(s->n_pixels, sizeof(s->pixels[0]));
 	}

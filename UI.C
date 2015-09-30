@@ -5,6 +5,7 @@
 
 #include "mouse.h"
 #include "stdint.h"
+#include "types.h"
 #include "ui.h"
 #include "vga13h.h"
 
@@ -108,18 +109,18 @@ static void show_zoom(Sprite *sprite, struct ui_state *state) {
 	fill_rect(&vga, window, 240);
 
 	/* FIXME can probably optimise this some... */
-	dim = max(sprite->width, sprite->height);
+	dim = max(sprite->w, sprite->h);
 	scale = window->w / dim;
-	offset.x = (window->w - sprite->width * scale) / 2;
-	offset.y = (window->w - sprite->height * scale) / 2;
+	offset.x = (window->w - sprite->w * scale) / 2;
+	offset.y = (window->w - sprite->h * scale) / 2;
 
 	rect_set(&pixel, 0, 0, scale, scale);
-	for (y = 0; y < sprite->height; y++) {
+	for (y = 0; y < sprite->h; y++) {
 		pixel.y = offset.y + y * scale;
 
-		for (x = 0; x < sprite->width; x++) {
+		for (x = 0; x < sprite->w; x++) {
 			pixel.x = offset.x + x * scale;
-			z = y * sprite->width + x;
+			z = y * sprite->w + x;
 			color = sprite->pixels[z];
 
 			if (color || !state->trans0)
@@ -146,8 +147,8 @@ void show_preview(Sprite *sprite, struct ui_state *state) {
 	else
 		fill_rect(&vga, window, 240);
 
-	offset.x = window->x + (window->w - sprite->width) / 2;
-	offset.y = window->y + (window->h - sprite->height) / 2;
+	offset.x = window->x + (window->w - sprite->w) / 2;
+	offset.y = window->y + (window->h - sprite->h) / 2;
 
 	blit_buf(&vga, &offset, sprite, NULL, state->trans0);
 }
@@ -171,8 +172,8 @@ void show_sheet(Sheet *sheet, struct ui_state *state) {
 			z = y * sheet->width + x;
 			sprite = &sheet->sprites[z];
 
-			offset.x = window->x + x * sprite->width;
-			offset.y = window->y + y * sprite->height;
+			offset.x = window->x + x * sprite->w;
+			offset.y = window->y + y * sprite->h;
 
 			blit_buf(&vga, &offset, sprite, NULL, state->trans0);
 
@@ -185,8 +186,8 @@ static void select_pixel(Sprite *sprite,
 						struct ui_state *state, int x, int y) {
 
 
-	badd(&state->sel.pixel.x, x, 0, sprite->width - 1);
-	badd(&state->sel.pixel.y, y, 0, sprite->height - 1);
+	badd(&state->sel.pixel.x, x, 0, sprite->w - 1);
+	badd(&state->sel.pixel.y, y, 0, sprite->h - 1);
 
 	state->sel.pixel_p = BUF_PX(sprite,
 							 state->sel.pixel.x, state->sel.pixel.y);
@@ -226,7 +227,7 @@ void do_keyevent(Sheet *sheet, struct ui_state *state, unsigned key) {
 		break;
 	case 'z':
 		memset(sheet->sprites[0].pixels, 0,
-			sheet->sprites[0].width * sheet->sprites[0].height);
+			sheet->sprites[0].w * sheet->sprites[0].h);
 		state->redraw |= REDRAW_ZOOM | REDRAW_PREVIEW | REDRAW_SHEET;
 		break;
 	case 'w':
