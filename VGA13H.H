@@ -43,6 +43,8 @@ do {                                                           \
 	if (__r->h < 0) { __r->y -= __r->h; __r->h = -__r->h; }    \
 } while (0)
 
+void rect_clip(Rect *rect, const Rect *bound);
+
 #define badd(_d,_i,_lb,_ub)                                    \
 do {                                                           \
 	*(_d) = min(max(*(_d) + (_i), (_lb)), (_ub));              \
@@ -60,7 +62,7 @@ do {                                                           \
 
 void draw_rect(Buffer *buf, Rect *rect, uint8_t color);
 void fill_rect(Buffer *buf, Rect *rect, uint8_t color);
-void blit_buf(Buffer *d_buf, Point *d_pt,
+void blit_buf(Buffer *d_buf, const Point *d_pt,
 	const Buffer *s_buf, const Rect *s_rect,
 	int trans0);
 
