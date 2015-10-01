@@ -35,10 +35,16 @@ enum {
 Rect ui_rects[] = {
 	{ 0, 0, 192, 192 },    /* RECT_ZOOM    */
 	{ 192, 0, 64, 64 },    /* RECT_PREVIEW */
-	{ 256, 0, 32, 64 },    /* RECT_PALETTE */
-	{ 288, 0, 32, 64 },    /* RECT_TOOLBOX */
+	{ 256, 0, 33, 64 },    /* RECT_PALETTE */
+	{ 288, 0, 31, 64 },    /* RECT_TOOLBOX */
 	{ 192, 64, 128, 128 }, /* RECT_SHEET   */
 	{ 0, 192, 320, 8 },    /* RECT_STATUS  */
+};
+
+struct pal_dim {
+	int8_t rows;
+	int8_t cols;
+	int8_t dim;
 };
 
 struct ui_state {
@@ -54,51 +60,78 @@ struct ui_state {
 		uint8_t *pixel_p;
 	} sel;
 	const char *fname;
+	struct pal_dim *pal_dim;
 };
 
-void show_palette(Palette *pal, struct ui_state *state) {
-	Rect swatch, *window;
-	int rows, cols;
-	int color;
-	int x, y;
+void init_paldim(struct pal_dim **pal_dimp, const Palette *pal) {
+	struct pal_dim *pal_dim = malloc(sizeof(struct pal_dim));
+	if (NULL == pal_dim) return;
 
 	if (pal->size > 32) {
-		rows = 16; cols = 8;
-		rect_set(&swatch, 0, 0, 4, 4);
+		pal_dim->rows = 16;
+		pal_dim->cols = 8;
+		pal_dim->dim = 3;
 	}
 	else if (pal->size > 8) {
-		rows = 8; cols = 4;
-		rect_set(&swatch, 0, 0, 8, 8);
+		pal_dim->rows = 8;
+		pal_dim->cols = 4;
+		pal_dim->dim = 7;
 	}
 	else if (pal->size > 2) {
-		rows = 4; cols = 2;
-		rect_set(&swatch, 0, 0, 16, 16);
+		pal_dim->rows = 4;
+		pal_dim->cols = 2;
+		pal_dim->dim = 15;
 	}
 	else if (pal->size == 2) {
-		rows = 2; cols = 1;
-		rect_set(&swatch, 0, 0, 32, 32);
+		pal_dim->rows = 2;
+		pal_dim->cols = 1;
+		pal_dim->dim = 31;
 	}
+
+	*pal_dimp = pal_dim;
+}
+
+void show_palette(Palette *pal, struct ui_state *state) {
+	struct pal_dim *pal_dim;
+	Rect swatch, *window;
+	int x, y;
+
+	if (NULL == state->pal_dim)
+		init_paldim(&state->pal_dim, pal);
+
+	pal_dim = state->pal_dim;
 
 	window = &ui_rects[RECT_PALETTE];
 	fill_rect(&vga, window, 248);
 
-	for (y = 0; y < rows; y++) {
-		for (x = 0; x < cols; x++) {
-			color = y * cols + x;
-			if (color >= pal->size) return;
+	for (y = 0; y < pal_dim->rows; y++) {
+		for (x = 0; x < pal_dim->cols; x++) {
+			int color, is_sel;
 
-			swatch.x = window->x + (x * swatch.w);
-			swatch.y = window->y + (y * swatch.h);
+			color = y * pal_dim->cols + x;
+			if (color >= pal->size) return;
+			is_sel = (color == state->sel.color);
+			if (color == 0 && state->trans0 && state->transpink)
+				color = 253;
+
+			rect_set(&swatch,
+				window->x + (x * (pal_dim->dim + 1)),
+				window->y + (y * (pal_dim->dim + 1)),
+				pal_dim->dim,
+				pal_dim->dim);
+
+			/* adjust size for selection status */
+			if (is_sel) {
+				swatch.w += 2;
+				swatch.h += 2;
+			}
+			else {
+				swatch.x += 1;
+				swatch.y += 1;
+			}
 
 			/* draw the color swatch */
-			if (color == 0 && state->trans0 && state->transpink)
-				fill_rect(&vga, &swatch, 253);
-			else
-				fill_rect(&vga, &swatch, color);
-
-			/* draw a border around the selected color */
-			if (state->sel.show && color == state->sel.color)
-				draw_rect(&vga, &swatch, 255);
+			fill_rect(&vga, &swatch, color);
 		}
 	}
 }
@@ -206,7 +239,7 @@ void do_keyevent(Sheet *sheet, struct ui_state *state, unsigned key) {
 	case 224:
 		/* recurse for special keys, with key value in high byte
 		 * and the escape value that got us here in low byte */
-		do_keyevent(sheet, state, getch() << 8 | key);
+		do_keyevent(sheet, state, (getch() << 8) | key);
 		return;
 	case 27:						/* esc */
 		state->finished = 1;
@@ -265,20 +298,16 @@ void do_keyevent(Sheet *sheet, struct ui_state *state, unsigned key) {
 void ui_13(Sheet *sheet, const char *fname) {
 	struct ui_state state;
 
+	memset(&state, 0, sizeof(state));
 	state.redraw = REDRAW_ALL;
-	state.finished = 0;
 	state.trans0 = 1;
-	state.transpink = 0;
-	state.mouse_under = 0;
 	state.sel.show = 1;
-	state.sel.color = 0;
 	state.sel.pixel.x = -1;
 	state.sel.pixel.y = -1;
-	state.sel.pixel_p = NULL;
 	state.fname = fname;
 
 	/* put the UI palette at the top end */
-	vga13h_setpalette(240, defpal_16, sizeof(defpal_16));
+	vga13h_setpalette(240, defpal_16, 16);
 
 	/* and the sheet palette at 0, for easy blitting */
 	vga13h_setpalette(0, sheet->palette.colors, sheet->palette.size);
