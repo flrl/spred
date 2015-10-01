@@ -346,6 +346,8 @@ void ui_13(Sheet *sheet, const char *fname) {
 
 	while (!state.finished) {
 		if (state.redraw) {
+			*VGA_PX(mouse.x, mouse.y) = state.mouse_under;
+
 			if (state.redraw == (uint16_t) REDRAW_ALL)
 				memset(vga.pixels, 248, vga.n_pixels);
 
@@ -367,12 +369,9 @@ void ui_13(Sheet *sheet, const char *fname) {
 			if (state.redraw & REDRAW_SHEET)
 				show_sheet(sheet, &state);
 
-			if (state.redraw & REDRAW_CURSOR) {
-				*VGA_PX(mouse.x, mouse.y) = state.mouse_under;
-				mouse_update(&mouse);
-				state.mouse_under = *VGA_PX(mouse.x, mouse.y);
-				*VGA_PX(mouse.x, mouse.y) = 255;
-			}
+			mouse_update(&mouse);
+			state.mouse_under = *VGA_PX(mouse.x, mouse.y);
+			*VGA_PX(mouse.x, mouse.y) = 255;
 
 			vsync();
 
