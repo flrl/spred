@@ -292,6 +292,36 @@ void do_keyevent(Sheet *sheet, struct ui_state *state, unsigned key) {
 		if (state->fname)
 			sheet_write(state->fname, sheet);
 		break;
+	case 'r':
+		badd(&sheet->palette.colors[state->sel.color].red, 1, 0, 63);
+		vga13h_setpalette(state->sel.color,
+			&sheet->palette.colors[state->sel.color], 1);
+		break;
+	case 'R':
+		badd(&sheet->palette.colors[state->sel.color].red, -1, 0, 63);
+		vga13h_setpalette(state->sel.color,
+			&sheet->palette.colors[state->sel.color], 1);
+		break;
+	case 'g':
+		badd(&sheet->palette.colors[state->sel.color].green, 1, 0, 63);
+		vga13h_setpalette(state->sel.color,
+			&sheet->palette.colors[state->sel.color], 1);
+		break;
+	case 'G':
+		badd(&sheet->palette.colors[state->sel.color].green, -1, 0, 63);
+		vga13h_setpalette(state->sel.color,
+			&sheet->palette.colors[state->sel.color], 1);
+		break;
+	case 'b':
+		badd(&sheet->palette.colors[state->sel.color].blue, 1, 0, 63);
+		vga13h_setpalette(state->sel.color,
+			&sheet->palette.colors[state->sel.color], 1);
+		break;
+	case 'B':
+		badd(&sheet->palette.colors[state->sel.color].blue, -1, 0, 63);
+		vga13h_setpalette(state->sel.color,
+			&sheet->palette.colors[state->sel.color], 1);
+		break;
 	}
 }
 
