@@ -1,6 +1,8 @@
 #ifndef UTIL_H
 #define UTIL_H
 
+#include <stdlib.h>
+
 #define badd(_d,_i,_lb,_ub)                                    \
 do {                                                           \
 	*(_d) = min(max(*(_d) + (_i), (_lb)), (_ub));              \

@@ -2,6 +2,7 @@
 #include <mem.h>
 
 #include "mouse.h"
+#include "util.h"
 
 #define MOUSE_INT			0x33
 #define MOUSE_RESET			0x00
@@ -62,15 +63,8 @@ int mouse_poll(Mouse *mouse) {
 void mouse_update(Mouse *mouse) {
 	int i;
 
-	mouse->x += mouse->dx;
-	mouse->y += mouse->dy;
-    mouse->dx = 0;
-	mouse->dy = 0;
-
-	if (mouse->x < 0) mouse->x = 0;
-	if (mouse->y < 0) mouse->y = 0;
-	if (mouse->x > 319) mouse->x = 319;
-	if (mouse->y > 199) mouse->y = 199;
+	badd(&mouse->x, mouse->dx, 0, 319);
+	badd(&mouse->y, mouse->dy, 0, 199);
 
 	for (i = 0; i < mouse->n_buttons; i++) {
 		if (mouse->pressed[i]) mouse->button[i] = 1;
@@ -78,4 +72,6 @@ void mouse_update(Mouse *mouse) {
 		mouse->pressed[i] = 0;
 		mouse->released[i] = 0;
 	}
+
+	mouse->events = 0;
 }
